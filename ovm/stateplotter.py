@@ -6,7 +6,8 @@ from pyproj import CRS, Proj, transform, Transformer
 import contextily as ctx
 import matplotlib.pyplot as plt
 
-class StatePlotter():
+
+class StatePlotter:
     #
     columns = [
         "icao24",
@@ -32,20 +33,16 @@ class StatePlotter():
              states: list,
              bbox: tuple,
              figsize: tuple = (15, 15),
-             tile_zoom: int = 8):
+             tile_zoom: int = 8,
+             filename: str = "traffic.png"):
         # define lat lon bounding box
         lat_min = bbox[0]
         lat_max = bbox[1]
         lon_min = bbox[2]
         lon_max = bbox[3]
 
-        # create data frames from states
-        json_dict = []
-        for state in states:
-            json_dict.append(state.__dict__)
-
         # create data frame
-        df = pd.DataFrame(json_dict, columns=self.columns)
+        df = pd.DataFrame(states, columns=self.columns)
         gdf = gpd.GeoDataFrame(
             df,
             geometry=gpd.points_from_xy(df.longitude, df.latitude),
@@ -69,7 +66,7 @@ class StatePlotter():
         ax.set_axis_off()
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        plt.savefig("traffic.png", bbox_inches="tight", pad_inches=-0.1)
+        plt.savefig(filename, bbox_inches="tight", pad_inches=-0.1)
         plt.close()
 
 
