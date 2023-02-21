@@ -1,0 +1,12 @@
+{
+  "opensky_credentials" : {
+    "username" : "user",
+    "password" : "password"
+  },
+  "mongodb_config" : {
+      "host": "127.0.0.1",
+      "port": 5432,
+      "database" : "planelogger",
+      "collection": "states"
+  }
+}
