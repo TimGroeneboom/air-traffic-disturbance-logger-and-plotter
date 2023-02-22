@@ -7,6 +7,8 @@ from shapely.geometry import Polygon
 from pyproj import CRS, Proj, transform, Transformer
 import contextily as ctx
 import matplotlib.pyplot as plt
+
+from ovm.disturbanceperiod import DisturbancePeriod
 from ovm.utils import convert_epsg4326_to_epsg3857
 
 
@@ -73,11 +75,11 @@ class Plotter:
         plt.close()
 
     def plot_trajectories(self,
-                    trajectories: dict,
-                    bbox: tuple,
-                    figsize: tuple = (15, 15),
-                    tile_zoom: int = 8,
-                    filename: str = "traffic.png"):
+                          disturbance_period: DisturbancePeriod,
+                          bbox: tuple,
+                          figsize: tuple = (15, 15),
+                          tile_zoom: int = 8,
+                          filename: str = "traffic.png"):
             # define lat lon bounding box
             lat_min = bbox[0]
             lat_max = bbox[1]
@@ -85,7 +87,7 @@ class Plotter:
             lon_max = bbox[3]
 
             linestrings = {}
-            for key, value in trajectories.items():
+            for key, value in disturbance_period.trajectories.items():
                 if len(value) >= 2:
                     linestring: LineString = LineString(value)
                     linestrings[key] = linestring
@@ -122,7 +124,11 @@ class Plotter:
             ctx.add_basemap(ax, zoom=tile_zoom)
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
-            ax.text(0.05, 0.15, 'colored text in axes coords',
+            ax.text(0.05, 0.10,
+                    'location: [%f, %f]\nperiod: %s - %s\nflights: %i' %
+                    (disturbance_period.coord[0], disturbance_period.coord[1],
+                     disturbance_period.begin.__str__(), disturbance_period.end.__str__(),
+                     disturbance_period.hits),
                     verticalalignment='bottom', horizontalalignment='left',
                     transform=ax.transAxes,
                     color='black', fontsize=15,
