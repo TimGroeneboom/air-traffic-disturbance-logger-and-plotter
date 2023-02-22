@@ -1,6 +1,6 @@
 # Nuisance Check
 
-## Logger.py
+## logger.py
 Logs air traffic within certain geographic bounds and writes entries into a MongoDB database
 
 Uses the OpenSky rest API (https://openskynetwork.github.io/opensky-api/rest.html)
@@ -35,3 +35,11 @@ options:
                         Time between runs
   -r RUNS, --runs RUNS  Amount of runs between intervals, default = 0 meaning infinite
 ```
+
+## nuisance_check.py
+
+Nuisance check is a script that runs once, it gets all the registered complainers with their parameters and checks if any periods of disturbances have  occured within a certain timespan on their geographic location and disturbance parameters.
+
+If a disturbance is registered, it tries to create a trajectory of all callsigns that have been found flying over complainants area. It then produces an output like this
+
+![This is an image](CodeFlow202302221613141.jpg)
