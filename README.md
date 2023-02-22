@@ -40,6 +40,9 @@ options:
 
 Nuisance check is a script that runs once, it gets all the registered complainers with their parameters and checks if any periods of disturbances have  occured within a certain timespan on their geographic location and disturbance parameters.
 
-If a disturbance is registered, it tries to create a trajectory of all callsigns that have been found flying over complainants area. It then produces an output like this
+If a disturbance is registered, it tries to create a trajectory of all callsigns that have been found flying over complainants area. It then produces an output image like this
+
+In the future, disturbance period information could automatically be sent to organizations responsible for collection aircraft noise complaints
 
 ![This is an image](disturbance_example.jpg)
+
