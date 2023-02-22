@@ -1,19 +1,20 @@
 import datetime
+from ovm.complainant import Complainant
 
 
 class DisturbancePeriod:
     def __init__(self,
-                 coord: tuple,
-                 radius: int,
-                 disturbance_callsigns: dict,
+                 complainant: Complainant,
+                 disturbances: dict,
                  begin: datetime,
                  end: datetime,
-                 hits: int):
-        self.coord = coord
-        self.radius = radius
-        self.disturbance_callsigns = disturbance_callsigns
+                 hits: int,
+                 average_altitude: float):
+        self.complainant = complainant
+        self.disturbances = disturbances
         self.begin = begin
         self.end = end
         self.hits = hits
+        self.averate_altitude = average_altitude
         self.trajectories = {}
 
