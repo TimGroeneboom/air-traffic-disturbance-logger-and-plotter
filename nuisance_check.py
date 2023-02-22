@@ -1,6 +1,7 @@
 # Import the python libraries
 import collections
 import datetime
+import math
 
 import pymongo
 import pymongo as pymongo
@@ -8,6 +9,7 @@ from pymongo import MongoClient
 import geopy.distance
 from ovm import environment
 from ovm.disturbancecomplaint import DisturbanceComplaint
+from ovm.stateplotter import StatePlotter
 from ovm.utils import *
 
 # Nuisance parameters
@@ -15,9 +17,9 @@ from ovm.utils import *
 # Christoffelkruidstraat
 origin = (52.396172234741506, 4.905621078252285)
 # Amsterdamse Bos
-# origin = (52.311502, 4.827680)
+#origin = (52.311502, 4.827680)
 
-radius = 1000
+radius = 2000
 altitude = 1000
 occurrences = 4
 timeframe = 60
@@ -119,6 +121,7 @@ for document in cursor:
     last_timestamp = timestamp
 
 # Calc trajectories for complaints for callsigns
+index = 0
 for complaint in complaints:
     # Calc disturbance duration
     disturbance_duration = complaint.end - complaint.begin
@@ -132,7 +135,8 @@ for complaint in complaints:
         # Gather states before and after this entry to plot a trajectory for callsign
         dictionary = ***REMOVED******REMOVED***
         items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': datetime_int***REMOVED******REMOVED***).limit(4)
-        items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': datetime_int***REMOVED******REMOVED***).sort([('Time', pymongo.DESCENDING)]).limit(4)
+        items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': datetime_int***REMOVED******REMOVED***).sort(
+            [('Time', pymongo.DESCENDING)]).limit(4)
         for doc in items_before:
             timestamp_int = doc['Time']
             if timestamp_int not in dictionary.keys():
@@ -148,10 +152,21 @@ for complaint in complaints:
         for key, value in ordered_dict.items():
             for state in value:
                 if state['callsign'] == callsign:
-                    coord = (state['latitude'], state['longitude'])
+                    coord = (state['longitude'], state['latitude'])
                     trajectory.append(coord)
 
         # Add it to the trajectories of this complaint
         complaint.trajectories[callsign] = trajectory
 
+    r_earth = 6378
+    lat_min = complaint.coord[0] - ((radius / 1000.0) / r_earth) * (180.0 / math.pi)
+    lon_min = complaint.coord[1] - ((radius / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
+    lat_max = complaint.coord[0] + ((radius / 1000.0) / r_earth) * (180.0 / math.pi)
+    lon_max = complaint.coord[1] + ((radius / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
 
+    index += 1
+    plotter = StatePlotter()
+    plotter.plot_trajectories(bbox=(lat_min, lat_max, lon_min, lon_max),
+                              trajectories=complaint.trajectories,
+                              tile_zoom=15,
+                              filename=('complaint%i.png' % index))
