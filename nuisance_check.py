@@ -17,10 +17,9 @@ from ovm.utils import *
 # Christoffelkruidstraat
 #origin = (52.396172234741506, 4.905621078252285)
 # Amsterdamse Bos
-origin = (52.311502, 4.827680)
-# Polder baan
-#origin = (52.389977, 4.712354)
-
+#origin = (52.311502, 4.827680)
+# Assendelft
+origin = (52.469640, 4.721354)
 radius = 1250
 altitude = 1000
 occurrences = 4
@@ -121,7 +120,24 @@ for document in cursor:
 
     last_timestamp = timestamp
 
-# Calc trajectories for complaints for callsigns
+# Handle disturbance if we finished in disturbance state
+if in_disturbance:
+    diff_since_last = timestamp - last_disturbance
+    disturbance_duration = last_disturbance - disturbance_begin
+    diff_since_begin = timestamp - disturbance_begin
+
+    if disturbance_hits >= occurrences:
+        if (disturbance_duration.seconds / 60) > timeframe:
+            disturbance_complaint = DisturbanceComplaint(origin,
+                                                         radius,
+                                                         disturbance_callsigns.copy(),
+                                                         disturbance_begin,
+                                                         last_disturbance,
+                                                         disturbance_hits)
+            complaints.append(disturbance_complaint)
+
+
+# Calc trajectories for generate complaints for callsigns
 index = 0
 for complaint in complaints:
     # Calc disturbance duration
