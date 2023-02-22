@@ -29,12 +29,12 @@ class StatePlotter:
         "position_source",
     ]
 
-    def plot(self,
-             states: list,
-             bbox: tuple,
-             figsize: tuple = (15, 15),
-             tile_zoom: int = 8,
-             filename: str = "traffic.png"):
+    def plot_states(self,
+                    states: list,
+                    bbox: tuple,
+                    figsize: tuple = (15, 15),
+                    tile_zoom: int = 8,
+                    filename: str = "traffic.png"):
         # define lat lon bounding box
         lat_min = bbox[0]
         lat_max = bbox[1]
@@ -61,7 +61,7 @@ class StatePlotter:
         gdf_3857 = gdf.to_crs(epsg=3857)  # web mercator
         f, ax = plt.subplots(figsize=figsize)
         bounds_3857.plot(ax=ax, alpha=0.0, edgecolor="k")
-        gdf_3857.plot(ax=ax, alpha=0.8, edgecolor="k")
+        gdf_3857.plot_states(ax=ax, alpha=0.8, edgecolor="k")
         ctx.add_basemap(ax, zoom=tile_zoom)
         ax.set_axis_off()
         ax.get_xaxis().set_visible(False)

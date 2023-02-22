@@ -3,9 +3,8 @@ import json
 import time
 import logging
 import argparse
-
 from numpy import uint64
-
+from ovm import environment
 from ovm.planelogger import PlaneLogger, PlotOptions
 
 if __name__ == '__main__':
@@ -43,8 +42,8 @@ if __name__ == '__main__':
     # Set log level
     logging.basicConfig(level=args.loglevel)
 
-    # Read environment config from json
-    environment = json.load(open('environment.json'))
+    # Load environment
+    environment = environment.load_environment('environment.json')
 
     # Create and run plane logger
     plane_logger = PlaneLogger(environment)
