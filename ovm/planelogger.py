@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from opensky_api import OpenSkyApi
 from ovm.environment import Environment
-from ovm.stateplotter import StatePlotter
+from ovm.plotter import Plotter
 from pymongo import MongoClient
 from dataclasses import dataclass
 from ovm.utils import *
@@ -26,7 +26,7 @@ class PlaneLogger:
                                         environment.mongodb_config.port)
 
         # Create plotter
-        self.state_plotter = StatePlotter()
+        self.state_plotter = Plotter()
 
         # Connect with opensky network
         self.opensky_api = OpenSkyApi(environment.opensky_credentials.username,

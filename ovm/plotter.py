@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from ovm.utils import convert_epsg4326_to_epsg3857
 
 
-class StatePlotter:
+class Plotter:
     def plot_states(self,
                     states: list,
                     bbox: tuple,

@@ -9,15 +9,15 @@ from pymongo import MongoClient
 import geopy.distance
 from ovm import environment
 from ovm.disturbancecomplaint import DisturbanceComplaint
-from ovm.stateplotter import StatePlotter
+from ovm.plotter import Plotter
 from ovm.utils import *
 
 # Nuisance parameters
 
 # Christoffelkruidstraat
-origin = (52.396172234741506, 4.905621078252285)
+#origin = (52.396172234741506, 4.905621078252285)
 # Amsterdamse Bos
-#origin = (52.311502, 4.827680)
+origin = (52.311502, 4.827680)
 # Polder baan
 #origin = (52.389977, 4.712354)
 
@@ -169,7 +169,7 @@ for complaint in complaints:
 
     # Make plot of all callsign trajectories
     index += 1
-    plotter = StatePlotter()
+    plotter = Plotter()
     plotter.plot_trajectories(bbox=(lat_min, lat_max, lon_min, lon_max),
                               trajectories=complaint.trajectories,
                               tile_zoom=14,
