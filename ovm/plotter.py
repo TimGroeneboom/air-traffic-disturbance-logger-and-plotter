@@ -113,16 +113,20 @@ class Plotter:
             bounds_3857 = bounds.to_crs(epsg=3857)  # web mercator
             gdf_3857 = gdf.to_crs(epsg=3857)  # web mercator
             f, ax = plt.subplots(figsize=figsize)
-            bounds_3857.plot(ax=ax, alpha=0.0, edgecolor="k")
-            gdf_3857.plot(ax=ax, alpha=0.8, edgecolor="k", column='callsign')
+            bounds_3857.plot(ax=ax, alpha=0.0, edgecolor="blue")
+            gdf_3857.plot(ax=ax, alpha=0.6, edgecolor="red", column='callsign')
             min_3857 = convert_epsg4326_to_epsg3857(lon_min, lat_min)
             max_3857 = convert_epsg4326_to_epsg3857(lon_max, lat_max)
             ax.set_xlim(min_3857[0], max_3857[0])
             ax.set_ylim(min_3857[1], max_3857[1])
             ctx.add_basemap(ax, zoom=tile_zoom)
-            ax.set_axis_off()
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
+            ax.text(0.05, 0.15, 'colored text in axes coords',
+                    verticalalignment='bottom', horizontalalignment='left',
+                    transform=ax.transAxes,
+                    color='black', fontsize=15,
+                    bbox=***REMOVED***'facecolor': 'white', 'alpha': 1, 'pad': 10***REMOVED***)
             plt.savefig(filename, bbox_inches="tight", pad_inches=-0.1)
             plt.close()
 
