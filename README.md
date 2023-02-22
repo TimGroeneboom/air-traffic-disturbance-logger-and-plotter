@@ -42,4 +42,4 @@ Nuisance check is a script that runs once, it gets all the registered complainer
 
 If a disturbance is registered, it tries to create a trajectory of all callsigns that have been found flying over complainants area. It then produces an output like this
 
-![This is an image](CodeFlow202302221613141.jpg)
+![This is an image](disturbance_example.jpg)
