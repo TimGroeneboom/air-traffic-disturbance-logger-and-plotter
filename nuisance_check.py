@@ -19,7 +19,7 @@ origin = (52.396172234741506, 4.905621078252285)
 # Amsterdamse Bos
 #origin = (52.311502, 4.827680)
 
-radius = 2000
+radius = 1250
 altitude = 1000
 occurrences = 4
 timeframe = 60
@@ -159,14 +159,14 @@ for complaint in complaints:
         complaint.trajectories[callsign] = trajectory
 
     r_earth = 6378
-    lat_min = complaint.coord[0] - ((radius / 1000.0) / r_earth) * (180.0 / math.pi)
-    lon_min = complaint.coord[1] - ((radius / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
-    lat_max = complaint.coord[0] + ((radius / 1000.0) / r_earth) * (180.0 / math.pi)
-    lon_max = complaint.coord[1] + ((radius / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
+    lat_min = complaint.coord[0] - (((radius*2) / 1000.0) / r_earth) * (180.0 / math.pi)
+    lon_min = complaint.coord[1] - (((radius*2) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
+    lat_max = complaint.coord[0] + (((radius*2) / 1000.0) / r_earth) * (180.0 / math.pi)
+    lon_max = complaint.coord[1] + (((radius*2) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
 
     index += 1
     plotter = StatePlotter()
     plotter.plot_trajectories(bbox=(lat_min, lat_max, lon_min, lon_max),
                               trajectories=complaint.trajectories,
-                              tile_zoom=15,
+                              tile_zoom=14,
                               filename=('complaint%i.png' % index))
