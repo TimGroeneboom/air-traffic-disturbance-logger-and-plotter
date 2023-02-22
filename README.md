@@ -11,7 +11,7 @@ Example usage:
 
 ```
 # Query from opensky and store all air traffic within given certain geographic bounds every 22 seconds forever
-python3 python3 logger.py -l INFO --zoomlevel 9 --bbox 49.44 54.16 2.82 7.02 -i 22.0
+python3 logger.py --bbox 49.44 54.16 2.82 7.02 --interval 22.0
 ```
 
 All CLI arguments:
