@@ -1,6 +1,5 @@
 import json
 import math
-
 import pandas as pd
 import geopandas as gpd
 from shapely import LineString
@@ -8,21 +7,10 @@ from shapely.geometry import Polygon
 from pyproj import CRS, Proj, transform, Transformer
 import contextily as ctx
 import matplotlib.pyplot as plt
+from ovm.utils import convert_epsg4326_to_epsg3857
 
 
 class StatePlotter:
-    #   Converting lat, lon (epsg:4326) into EPSG:3857
-    # Ref: https://stackoverflow.com/questions/37523872/converting-coordinates-from-epsg-3857-to-4326-dotspatial/40403522#40403522
-
-    def ConvertCoordinate(self, lon, lat):
-        lonInEPSG4326 = lon
-        latInEPSG4326 = lat
-
-        lonInEPSG3857 = (lonInEPSG4326 * 20037508.34 / 180)
-        latInEPSG3857 = (math.log(math.tan((90 + latInEPSG4326) * math.pi / 360)) / (math.pi / 180)) * (
-                    20037508.34 / 180)
-        return lonInEPSG3857, latInEPSG3857
-
     def plot_states(self,
                     states: list,
                     bbox: tuple,
@@ -127,8 +115,8 @@ class StatePlotter:
             f, ax = plt.subplots(figsize=figsize)
             bounds_3857.plot(ax=ax, alpha=0.0, edgecolor="k")
             gdf_3857.plot(ax=ax, alpha=0.8, edgecolor="k", column='callsign')
-            min_3857 = self.ConvertCoordinate(lon_min, lat_min)
-            max_3857 = self.ConvertCoordinate(lon_max, lat_max)
+            min_3857 = convert_epsg4326_to_epsg3857(lon_min, lat_min)
+            max_3857 = convert_epsg4326_to_epsg3857(lon_max, lat_max)
             ax.set_xlim(min_3857[0], max_3857[0])
             ax.set_ylim(min_3857[1], max_3857[1])
             ctx.add_basemap(ax, zoom=tile_zoom)

@@ -18,6 +18,8 @@ from ovm.utils import *
 origin = (52.396172234741506, 4.905621078252285)
 # Amsterdamse Bos
 #origin = (52.311502, 4.827680)
+# Polder baan
+#origin = (52.389977, 4.712354)
 
 radius = 1250
 altitude = 1000
@@ -46,7 +48,6 @@ def ignore_callsign(callsign: str):
 
 disturbance_callsigns: dict = {}
 complaints = []
-
 last_timestamp: datetime
 disturbance_begin: datetime
 last_disturbance: datetime
@@ -158,12 +159,15 @@ for complaint in complaints:
         # Add it to the trajectories of this complaint
         complaint.trajectories[callsign] = trajectory
 
+    # Set the bounding box for our area of interest
     r_earth = 6378
-    lat_min = complaint.coord[0] - (((radius*2) / 1000.0) / r_earth) * (180.0 / math.pi)
-    lon_min = complaint.coord[1] - (((radius*2) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
-    lat_max = complaint.coord[0] + (((radius*2) / 1000.0) / r_earth) * (180.0 / math.pi)
-    lon_max = complaint.coord[1] + (((radius*2) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
+    padding = 1000
+    lat_min = complaint.coord[0] - (((radius+padding) / 1000.0) / r_earth) * (180.0 / math.pi)
+    lon_min = complaint.coord[1] - (((radius+padding) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
+    lat_max = complaint.coord[0] + (((radius+padding) / 1000.0) / r_earth) * (180.0 / math.pi)
+    lon_max = complaint.coord[1] + (((radius+padding) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
 
+    # Make plot of all callsign trajectories
     index += 1
     plotter = StatePlotter()
     plotter.plot_trajectories(bbox=(lat_min, lat_max, lon_min, lon_max),
