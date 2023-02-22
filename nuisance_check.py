@@ -8,18 +8,18 @@ import pymongo as pymongo
 from pymongo import MongoClient
 import geopy.distance
 from ovm import environment
-from ovm.disturbancecomplaint import DisturbanceComplaint
+from ovm.disturbanceperiod import DisturbancePeriod
 from ovm.plotter import Plotter
 from ovm.utils import *
 
 # Nuisance parameters
 
 # Christoffelkruidstraat
-#origin = (52.396172234741506, 4.905621078252285)
+origin = (52.396172234741506, 4.905621078252285)
 # Amsterdamse Bos
 #origin = (52.311502, 4.827680)
 # Assendelft
-origin = (52.469640, 4.721354)
+#origin = (52.469640, 4.721354)
 radius = 1250
 altitude = 1000
 occurrences = 4
@@ -46,7 +46,7 @@ def ignore_callsign(callsign: str):
 
 
 disturbance_callsigns: dict = ***REMOVED******REMOVED***
-complaints = []
+disturbance_periods = []
 last_timestamp: datetime
 disturbance_begin: datetime
 last_disturbance: datetime
@@ -104,13 +104,13 @@ for document in cursor:
             diff_since_begin = timestamp - disturbance_begin
             if (diff_since_last.seconds / 60) >= timeframe:
                 if disturbance_hits >= occurrences:
-                    disturbance_complaint = DisturbanceComplaint(origin,
-                                                                 radius,
-                                                                 disturbance_callsigns.copy(),
-                                                                 disturbance_begin,
-                                                                 last_disturbance,
-                                                                 disturbance_hits)
-                    complaints.append(disturbance_complaint)
+                    disturbance_complaint = DisturbancePeriod(origin,
+                                                              radius,
+                                                              disturbance_callsigns.copy(),
+                                                              disturbance_begin,
+                                                              last_disturbance,
+                                                              disturbance_hits)
+                    disturbance_periods.append(disturbance_complaint)
 
                 in_disturbance = False
                 disturbance_begin = None
@@ -128,27 +128,27 @@ if in_disturbance:
 
     if disturbance_hits >= occurrences:
         if (disturbance_duration.seconds / 60) > timeframe:
-            disturbance_complaint = DisturbanceComplaint(origin,
-                                                         radius,
-                                                         disturbance_callsigns.copy(),
-                                                         disturbance_begin,
-                                                         last_disturbance,
-                                                         disturbance_hits)
-            complaints.append(disturbance_complaint)
+            disturbance_complaint = DisturbancePeriod(origin,
+                                                      radius,
+                                                      disturbance_callsigns.copy(),
+                                                      disturbance_begin,
+                                                      last_disturbance,
+                                                      disturbance_hits)
+            disturbance_periods.append(disturbance_complaint)
 
 
 # Calc trajectories for generate complaints for callsigns
 index = 0
-for complaint in complaints:
+for disturbance_period in disturbance_periods:
     # Calc disturbance duration
-    disturbance_duration = complaint.end - complaint.begin
+    disturbance_duration = disturbance_period.end - disturbance_period.begin
     print('Disturbance detected. %i hits and a total duration of %i minutes\n'
           'Disturbance began at %s and ended at %s' %
-          (complaint.hits, (disturbance_duration.seconds / 60),
-           complaint.begin.__str__(), complaint.end.__str__()))
+          (disturbance_period.hits, (disturbance_duration.seconds / 60),
+           disturbance_period.begin.__str__(), disturbance_period.end.__str__()))
 
     # Create trajectories for complaint
-    for callsign, datetime_int in complaint.disturbance_callsigns.items():
+    for callsign, datetime_int in disturbance_period.disturbance_callsigns.items():
         # Gather states before and after this entry to plot a trajectory for callsign
         dictionary = ***REMOVED******REMOVED***
         items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': datetime_int***REMOVED******REMOVED***).limit(4)
@@ -173,20 +173,21 @@ for complaint in complaints:
                     trajectory.append(coord)
 
         # Add it to the trajectories of this complaint
-        complaint.trajectories[callsign] = trajectory
+        disturbance_period.trajectories[callsign] = trajectory
 
     # Set the bounding box for our area of interest
     r_earth = 6378
     padding = 1000
-    lat_min = complaint.coord[0] - (((radius+padding) / 1000.0) / r_earth) * (180.0 / math.pi)
-    lon_min = complaint.coord[1] - (((radius+padding) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
-    lat_max = complaint.coord[0] + (((radius+padding) / 1000.0) / r_earth) * (180.0 / math.pi)
-    lon_max = complaint.coord[1] + (((radius+padding) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(complaint.coord[0] * math.pi/180.0)
+    lat_min = disturbance_period.coord[0] - (((radius + padding) / 1000.0) / r_earth) * (180.0 / math.pi)
+    lon_min = disturbance_period.coord[1] - (((radius + padding) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(disturbance_period.coord[0] * math.pi / 180.0)
+    lat_max = disturbance_period.coord[0] + (((radius + padding) / 1000.0) / r_earth) * (180.0 / math.pi)
+    lon_max = disturbance_period.coord[1] + (((radius + padding) / 1000.0) / r_earth) * (180.0 / math.pi) / math.cos(disturbance_period.coord[0] * math.pi / 180.0)
 
     # Make plot of all callsign trajectories
     index += 1
     plotter = Plotter()
     plotter.plot_trajectories(bbox=(lat_min, lat_max, lon_min, lon_max),
-                              trajectories=complaint.trajectories,
+                              disturbance_period=disturbance_period,
                               tile_zoom=14,
-                              filename=('complaint%i.png' % index))
+                              figsize=(10,10),
+                              filename=('complaint%i.jpg' % index))

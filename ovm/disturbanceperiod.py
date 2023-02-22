@@ -1,7 +1,7 @@
 import datetime
 
 
-class DisturbanceComplaint:
+class DisturbancePeriod:
     def __init__(self,
                  coord: tuple,
                  radius: int,
