@@ -13,6 +13,7 @@ from ovm.utils import convert_epsg4326_to_epsg3857
 
 
 class Plotter:
+    # Plots states of planes onto map within given geographic bounding box
     def plot_states(self,
                     states: list,
                     bbox: tuple,
@@ -74,6 +75,8 @@ class Plotter:
         plt.savefig(filename, bbox_inches="tight", pad_inches=-0.1)
         plt.close()
 
+    # Plots given disturbance period into a plot with trajectories and a geographic bounding box plus some meta-information
+    # about the disturbance period
     def plot_trajectories(self,
                           disturbance_period: DisturbancePeriod,
                           bbox: tuple,

@@ -36,13 +36,28 @@ options:
   -r RUNS, --runs RUNS  Amount of runs between intervals, default = 0 meaning infinite
 ```
 
-## nuisance_check.py
+## disturbancecheck.py
 
-Nuisance check is a script that runs once, it gets all the registered complainers with their parameters and checks if any periods of disturbances have  occured within a certain timespan on their geographic location and disturbance parameters.
+disturbancecheck is a script that runs once, it gets all the registered complainers with their parameters and checks if any periods of disturbances have  occured within a certain timespan on their geographic location and disturbance parameters.
 
 If a disturbance is registered, it tries to create a trajectory of all callsigns that have been found flying over complainants area. It then produces an output image like this
 
 In the future, disturbance period information could automatically be sent to organizations responsible for collection aircraft noise complaints
 
 ![This is an image](disturbance_example.jpg)
+
+All CLI arguments:
+
+```
+usage: disturbancecheck.py [-h] [-l LOGLEVEL] [-p | --plot | --no-plot] [-z ZOOMLEVEL]
+
+options:
+  -h, --help            show this help message and exit
+  -l LOGLEVEL, --loglevel LOGLEVEL
+                        LOG Level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  -p, --plot, --no-plot
+                        Creates a plot for each run
+  -z ZOOMLEVEL, --zoomlevel ZOOMLEVEL
+                        Zoom level of contextly maps
+```
 
