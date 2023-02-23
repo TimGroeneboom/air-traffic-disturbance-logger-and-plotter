@@ -1,4 +1,8 @@
-# Nuisance Check
+# Air Traffic Disturbance Logger & Plotter
+
+This project aims to automatically log air traffic disturbance in your area. It uses the [opensky network](https://opensky-network.org/) to track air traffic around certain geographic bounds. 
+
+Air traffic is stored in a MongoDB. See [logger.py](##logger.py). Disturbance checking and plotting is done using [disturbancecheck.py](##disturbancecheck.py)
 
 ## logger.py
 Logs air traffic within certain geographic bounds and writes entries into a MongoDB database
