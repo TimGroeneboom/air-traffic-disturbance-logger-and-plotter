@@ -1,5 +1,7 @@
 # Import the python libraries
+import argparse
 import collections
+import logging
 import pymongo as pymongo
 from pymongo import MongoClient
 import geopy.distance
@@ -10,13 +12,31 @@ from ovm.plotter import Plotter
 from ovm.utils import *
 
 if __name__ == '__main__':
-    # TODO: make this real, fetch complainants from database
+    # parse cli arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--loglevel',
+                        type=str.upper,
+                        default='INFO',
+                        help='LOG Level (DEBUG, INFO, WARNING, ERROR, CRITICAL)')
+    parser.add_argument('-p', '--plot',
+                        action=argparse.BooleanOptionalAction,
+                        help='Creates a plot for each run')
+    parser.add_argument('-z', '--zoomlevel',
+                        type=int,
+                        default=14,
+                        help='Zoom level of contextly maps')
+    args = parser.parse_args()
+
+    # Set log level
+    logging.basicConfig(level=args.loglevel)
+
+    # TODO: fetch complainants from database
     complainants = []
     complainants.append(Complainant(user='CodeFlow',
                                     # Amsterdamse Bos
-                                     #origin=(52.311502, 4.827680),
+                                    # origin=(52.311502, 4.827680),
                                     # Assendelft
-                                    #origin=(52.469640, 4.721354),
+                                    # origin=(52.469640, 4.721354),
                                     # Christoffelkruidstraat
                                     origin=(52.396172234741506, 4.905621078252285),
                                     radius=1250,
@@ -30,56 +50,77 @@ if __name__ == '__main__':
     # Choose the appropriate client
     client = MongoClient(environment.mongodb_config.host, environment.mongodb_config.port)
 
+    # TODO: get callsigns to ignore from database
     # Ignore certain callsigns
     ignore_callsigns = [
         'LIFELN1'
     ]
 
-
-    def ignore_callsign(callsign: str):
-        for other in ignore_callsigns:
-            if callsign_compare(callsign, other):
-                return True
-
-        return False
-
-
     for complainant in complainants:
+        # Disturbances is a dictionary with plane callsign as key value and the integer timestamp as value
         disturbances: dict = ***REMOVED******REMOVED***
+
+        # Array of DisturbancePeriod data classes holding information about all disturbance periods found in database
         disturbance_periods = []
+
+        # The last timestamp found
         last_timestamp: datetime
+
+        # The timestamp of the beginning of a disturbance period
         disturbance_begin: datetime
+
+        # The timestamp of the last disturbance occurrence found
         last_disturbance: datetime
+
+        # Amount of disturbances recorded
         disturbance_hits = 0
+
+        # If the disturbance threshold is reached, and we're currently iterating through a disturbance period
         in_disturbance = False
+
+        # Get the collection of states from the mongo db
+        # A state holds all plane information (callsign, location, altitude, etc..) on a specific timestamp
+        # The time is the key value of a state and is ordered accordingly in the mongo database
+        # Time is an int64 holding the timestamp in the following format %Y%m%d%H%M%S
         states_collection = client[environment.mongodb_config.database][environment.mongodb_config.collection]
         cursor = states_collection.find(***REMOVED******REMOVED***)
+
+        # Total altitude, this is used to compute the average altitude measured in a disturbance period
         total_altitude = 0
 
         # Iterate through states
         for document in cursor:
+            # Get timestamp as integer value and as datetime object
             timestamp_int = document['Time']
             timestamp = convert_int_to_datetime(timestamp_int)
+
+            # Get all states
             states = document['States']
+
+            # Signifies if during this timestamp, a disturbance is detected
             disturbance_in_this_timestamp = False
 
             for state in states:
                 # Get callsign
-                callsign = state['callsign']
+                callsign = remove_whitespace(state['callsign'])
 
                 # Ignore grounded planes
                 if state['baro_altitude'] is None:
                     continue
 
                 # Ignore specified callsigns
-                if ignore_callsign(callsign):
+                if list_contains_value(arr=ignore_callsigns,
+                                       value=callsign):
                     continue
 
                 # Check if altitude is lower than altitude and if distance is within specified radius
                 if state['baro_altitude'] < complainant.altitude:
+                    # Obtain lat lon from location to compute distance from complainent origin
                     coord = (state['latitude'], state['longitude'])
                     distance = geopy.distance.distance(complainant.origin, coord).meters
+
                     if distance < complainant.radius:
+                        # A disturbance is detected
                         disturbance_hits += 1
                         total_altitude += state['baro_altitude']
 
@@ -100,6 +141,8 @@ if __name__ == '__main__':
 
             # Check if disturbance has ended and if we need to generate a complaint within set parameters
             if not disturbance_in_this_timestamp:
+                # There is no disturbance in this timestamp, if we're currently in a disturbance period
+                # check if this needs to end, and we can log store this period as a disturbance period
                 if in_disturbance:
                     diff_since_last = timestamp - last_disturbance
                     disturbance_duration = last_disturbance - disturbance_begin
@@ -123,12 +166,12 @@ if __name__ == '__main__':
 
             last_timestamp = timestamp
 
+        # Done iterating through al states in database
         # Handle disturbance if we finished in disturbance state
         if in_disturbance:
             diff_since_last = timestamp - last_disturbance
             disturbance_duration = last_disturbance - disturbance_begin
             diff_since_begin = timestamp - disturbance_begin
-
             if disturbance_hits >= complainant.occurrences:
                 if (disturbance_duration.seconds / 60) > complainant.timeframe:
                     disturbance_period = DisturbancePeriod(complainant=complainant,
@@ -144,10 +187,10 @@ if __name__ == '__main__':
         for disturbance_period in disturbance_periods:
             # Calc disturbance duration
             disturbance_duration = disturbance_period.end - disturbance_period.begin
-            print('Disturbance detected. %i hits and a total duration of %i minutes\n'
-                  'Disturbance began at %s and ended at %s' %
-                  (disturbance_period.hits, (disturbance_duration.seconds / 60),
-                   disturbance_period.begin.__str__(), disturbance_period.end.__str__()))
+            logging.info('Disturbance detected. %i hits and a total duration of %i minutes\n'
+                         'Disturbance began at %s and ended at %s' %
+                         (disturbance_period.hits, (disturbance_duration.seconds / 60),
+                          disturbance_period.begin.__str__(), disturbance_period.end.__str__()))
 
             # Create trajectories for complaint
             for callsign, datetime_int in disturbance_period.disturbances.items():
@@ -170,7 +213,7 @@ if __name__ == '__main__':
                 ordered_dict = collections.OrderedDict(sorted(dictionary.items()))
                 for key, value in ordered_dict.items():
                     for state in value:
-                        if state['callsign'] == callsign:
+                        if remove_whitespace(state['callsign']) == callsign:
                             coord = (state['longitude'], state['latitude'])
                             trajectory.append(coord)
 
@@ -179,30 +222,19 @@ if __name__ == '__main__':
 
             # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
             # trajectories
-            r_earth = 6378
-            padding = 1000
-            lat_min = disturbance_period.complainant.origin[0] - (
-                        ((complainant.radius + padding) / 1000.0) / r_earth) * (
-                              180.0 / math.pi)
-            lon_min = disturbance_period.complainant.origin[1] - (
-                        ((complainant.radius + padding) / 1000.0) / r_earth) * (
-                              180.0 / math.pi) / math.cos(disturbance_period.complainant.origin[0] * math.pi / 180.0)
-            lat_max = disturbance_period.complainant.origin[0] + (
-                        ((complainant.radius + padding) / 1000.0) / r_earth) * (
-                              180.0 / math.pi)
-            lon_max = disturbance_period.complainant.origin[1] + (
-                        ((complainant.radius + padding) / 1000.0) / r_earth) * (
-                              180.0 / math.pi) / math.cos(disturbance_period.complainant.origin[0] * math.pi / 180.0)
+            bbox = get_geo_bbox_around_coord(complainant.origin, (complainant.radius + 1000) / 1000.0)
 
             # Make plot of all callsign trajectories
-            index += 1
-            plotter = Plotter()
-            plotter.plot_trajectories(bbox=(lat_min, lat_max, lon_min, lon_max),
-                                      disturbance_period=disturbance_period,
-                                      tile_zoom=14,
-                                      figsize=(10, 10),
-                                      filename=('%s%s%i.jpg' % (disturbance_period.complainant.user,
-                                                                disturbance_period.begin.strftime("%Y%m%d%H%M%S"),
-                                                                index)))
+            if args.plot:
+                output_file = '%s%s.jpg' % (disturbance_period.complainant.user,
+                                            disturbance_period.begin.strftime("%Y%m%d%H%M%S"))
+                logging.info('Generating disturbance period plot %s', output_file)
+                plotter = Plotter()
+                plotter.plot_trajectories(bbox=bbox,
+                                          disturbance_period=disturbance_period,
+                                          tile_zoom=args.zoomlevel,
+                                          figsize=(10, 10),
+                                          filename=output_file)
 
+    # Exit gracefully
     exit(0)
