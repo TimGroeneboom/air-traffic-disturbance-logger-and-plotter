@@ -36,9 +36,9 @@ if __name__ == '__main__':
                                     # Amsterdamse Bos
                                     # origin=(52.311502, 4.827680),
                                     # Assendelft
-                                    # origin=(52.469640, 4.721354),
+                                    origin=(52.469640, 4.721354),
                                     # Christoffelkruidstraat
-                                    origin=(52.396172234741506, 4.905621078252285),
+                                    #origin=(52.396172234741506, 4.905621078252285),
                                     radius=1250,
                                     altitude=1000,
                                     occurrences=4,
@@ -77,6 +77,9 @@ if __name__ == '__main__':
 
         # If the disturbance threshold is reached, and we're currently iterating through a disturbance period
         in_disturbance = False
+
+        # Callsigns in current disturbance period
+        callsigns_in_disturbance = []
 
         # Get the collection of states from the mongo db
         # A state holds all plane information (callsign, location, altitude, etc..) on a specific timestamp
@@ -120,8 +123,11 @@ if __name__ == '__main__':
                     distance = geopy.distance.distance(complainant.origin, coord).meters
 
                     if distance < complainant.radius:
-                        # A disturbance is detected
-                        disturbance_hits += 1
+                        # A disturbance is detected, check if it is a new plane in this disturbance period
+                        if not list_contains_value(callsigns_in_disturbance, callsign):
+                            disturbance_hits += 1
+                            callsigns_in_disturbance.append(callsign)
+
                         total_altitude += state['baro_altitude']
 
                         # Check if there already is a disturbance in this timeframe, otherwise create a new disturbance
@@ -163,6 +169,7 @@ if __name__ == '__main__':
                         disturbance_hits = 0
                         total_altitude = 0
                         disturbances = {}
+                        callsigns_in_disturbance = []
 
             last_timestamp = timestamp
 
