@@ -41,15 +41,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Set log level
-    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
-    log_file_name = 'log.log'
-    handler = TimedRotatingFileHandler(log_file_name,
-                                       when='midnight',
-                                       backupCount=10)
-    handler.setFormatter(formatter)
-    logger = logging.getLogger(__name__)
-    logger.addHandler(handler)
-    logger.setLevel(args.loglevel)
+    logging.basicConfig(level=args.loglevel)
 
     # Load environment
     environment = environment.load_environment('environment.json')
