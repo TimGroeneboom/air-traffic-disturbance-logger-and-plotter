@@ -2,6 +2,8 @@
 import argparse
 import collections
 import logging
+import datetime
+import time
 import pymongo as pymongo
 from pymongo import MongoClient
 import geopy.distance
@@ -34,7 +36,7 @@ if __name__ == '__main__':
     complainants = []
     complainants.append(Complainant(user='CodeFlow',
                                     # Amsterdamse Bos
-                                    # origin=(52.311502, 4.827680),
+                                    #origin=(52.311502, 4.827680),
                                     # Assendelft
                                     origin=(52.469640, 4.721354),
                                     # Christoffelkruidstraat
@@ -57,6 +59,12 @@ if __name__ == '__main__':
     ]
 
     for complainant in complainants:
+        # Get current time for performance and time measurement
+        current_time = time.perf_counter()
+
+        # Log user info
+        logging.info('Checking disturbances for user %s' % complainant.user)
+
         # Disturbances is a dictionary with plane callsign as key value and the integer timestamp as value
         disturbances: dict = {}
 
@@ -194,12 +202,13 @@ if __name__ == '__main__':
         for disturbance_period in disturbance_periods:
             # Calc disturbance duration
             disturbance_duration = disturbance_period.end - disturbance_period.begin
-            logging.info('Disturbance detected. %i hits and a total duration of %i minutes\n'
+            logging.info('Disturbance detected. %i flights and a total duration of %i minutes. '
                          'Disturbance began at %s and ended at %s' %
-                         (disturbance_period.hits, (disturbance_duration.seconds / 60),
+                         (len(disturbance_period.disturbances.items()), (disturbance_duration.seconds / 60),
                           disturbance_period.begin.__str__(), disturbance_period.end.__str__()))
 
             # Create trajectories for complaint
+            logging.info('Collecting trajectories for %i flights' % (len(disturbance_period.disturbances.items())))
             for callsign, datetime_int in disturbance_period.disturbances.items():
                 # Gather states before and after this entry to plot a trajectory for callsign
                 dictionary = {}
@@ -242,6 +251,10 @@ if __name__ == '__main__':
                                           tile_zoom=args.zoomlevel,
                                           figsize=(10, 10),
                                           filename=output_file)
+
+        # Log performance
+        time_elapsed = time.perf_counter() - current_time
+        logging.info('Operation took %f seconds' % time_elapsed)
 
     # Exit gracefully
     exit(0)
