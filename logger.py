@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     # Set log level
     formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
-    log_file_name = 'logs/log.log'
+    log_file_name = 'log.log'
     handler = TimedRotatingFileHandler(log_file_name,
                                        when='midnight',
                                        backupCount=10)
