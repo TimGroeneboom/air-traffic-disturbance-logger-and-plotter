@@ -3,6 +3,7 @@ import json
 import time
 import logging
 import argparse
+from logging.handlers import TimedRotatingFileHandler
 from numpy import uint64
 from ovm import environment
 from ovm.planelogger import PlaneLogger, PlotOptions
@@ -40,7 +41,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Set log level
-    logging.basicConfig(level=args.loglevel)
+    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+    handler = TimedRotatingFileHandler('logs/log',
+                                       when='midnight',
+                                       backupCount=10)
+    handler.setFormatter(formatter)
+    logger = logging.getLogger(__name__)
+    logger.addHandler(handler)
+    logger.setLevel(args.loglevel)
 
     # Load environment
     environment = environment.load_environment('environment.json')
