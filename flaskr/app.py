@@ -13,22 +13,24 @@ from ovm.environment import load_environment
 from ovm.utils import DataclassJSONEncoder
 
 # Load environment
-environment = load_environment('../environment.json')
+environment = load_environment('environment.json')
 
 # Create app
 app = Flask(__name__)
 
-static_dir = 'static'
+static_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static')
 if not os.path.exists(static_dir):
     os.mkdir(static_dir)
+
 
 @app.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "POST":
         try:
             d = request.form
-            url = 'http://localhost:5000/find_disturbance/%s/%f/%f/%i/%i/%i/%i' % \
-                  (d['user'], float(d['lat']), float(d['lon']),
+            url = 'http://%s/find_disturbance/%s/%f/%f/%i/%i/%i/%i' % \
+                  (request.host,
+                   d['user'], float(d['lat']), float(d['lon']),
                    int(d['radius']), int(d['altitude']),
                    int(d['occurrences']),
                    int(d['timeframe']))
