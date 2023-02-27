@@ -70,7 +70,6 @@ if __name__ == '__main__':
     # Write plots to disk
     if args.plot:
         for user, found_disturbances in disturbances.items():
-            index: int = 0
             for disturbance in found_disturbances.disturbances:
                 with open('%s_%s.jpg' % (user, disturbance.begin), 'wb') as fh:
                     fh.write(base64.decodebytes(bytes(disturbance.img, "utf-8")))

@@ -1,11 +1,10 @@
 import io
-import json
-import math
+import matplotlib
 import pandas as pd
 import geopandas as gpd
 from shapely import LineString, Point
 from shapely.geometry import Polygon
-from pyproj import CRS, Proj, transform, Transformer
+from pyproj import CRS
 import contextily as ctx
 import matplotlib.pyplot as plt
 
@@ -14,6 +13,13 @@ from ovm.utils import convert_epsg4326_to_epsg3857
 
 
 class Plotter:
+    def __init__(self):
+        """
+        Use the agg backend because we only want to plot to files
+        See : https://matplotlib.org/stable/users/explain/backends.html
+        """
+        matplotlib.use('agg')
+
     # Plots states of planes onto map within given geographic bounding box
     # Writes plot to filename
     def plot_states(self,
