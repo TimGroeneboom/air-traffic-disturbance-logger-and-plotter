@@ -20,9 +20,9 @@ from ovm.utils import convert_datetime_to_int
 @dataclass
 class StateIterator:
     """"
-    The state iterator is user per complainant while iterating over MongoDB documents
+    The state iterator is used per complainant while iterating over MongoDB documents
     The reason to use this is that we want to iterate over the database one, collecting all disturbance periods
-    for every complainant
+    for every given complainant
     """
 
     # Disturbances is a dictionary with plane callsign as key value and the integer timestamp as value
@@ -108,6 +108,17 @@ class DisturbanceFinder:
                           complainants: list,
                           plot: bool = True,
                           zoomlevel: int = 14):
+        """
+        Finds disturbances for all complainants given
+        Returns a Disturbances object, holding all disturbances found
+        :param begin: begin date & time of when to check for disturbances
+        :param end: end date & time
+        :param complainants: a list of complainants, als see @Complainant
+        :param plot: boolean indicating to generate a plot or not
+        :param zoomlevel: the zoomlevel of the plot
+        :return: a Disturbances object, holding all disturbances found
+        """
+
         # The return dictionary, will be dumped as json
         disturbances: dict = {}
 

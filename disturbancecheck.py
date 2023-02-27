@@ -3,12 +3,10 @@ import argparse
 import base64
 from datetime import datetime, timedelta
 import logging
-from io import StringIO, BytesIO
-from PIL import Image
 from ovm import environment
 from ovm.complainant import Complainant
 from ovm.disturbancefinder import DisturbanceFinder
-from ovm.utils import convert_datetime_to_int
+
 
 if __name__ == '__main__':
     # parse cli arguments
@@ -35,29 +33,25 @@ if __name__ == '__main__':
                                 radius=1000,
                                 altitude=1000,
                                 occurrences=4,
+                                timeframe=60),
+                    Complainant(user='Henk',
+                                origin=(52.469640, 4.721354),  # Assendelft
+                                radius=1000,
+                                altitude=1000,
+                                occurrences=4,
+                                timeframe=60),
+                    Complainant(user='Pieter',
+                                origin=(52.187571, 4.504961),  # Warmond
+                                radius=1000,
+                                altitude=1000,
+                                occurrences=4,
+                                timeframe=60),
+                    Complainant(user='Tim',
+                                origin=(52.402321, 4.916406),  # Christoffelkruidstraat
+                                radius=1000,
+                                altitude=1000,
+                                occurrences=4,
                                 timeframe=60)]
-    """
-    Complainant(user='Henk',
-                origin=(52.469640, 4.721354),  # Assendelft
-                # Warmond
-                # origin=(52.187571, 4.504961),
-                radius=1000,
-                altitude=1000,
-                occurrences=4,
-                timeframe=60),
-    Complainant(user='Pieter',
-                origin=(52.187571, 4.504961),  # Warmond
-                radius=1000,
-                altitude=1000,
-                occurrences=4,
-                timeframe=60),
-    Complainant(user='Tim',
-                origin=(52.402321, 4.916406),  # Christoffelkruidstraat
-                radius=1000,
-                altitude=1000,
-                occurrences=4,
-                timeframe=60)
-    """
 
     # Load environment
     environment = environment.load_environment('environment.json')
@@ -78,7 +72,7 @@ if __name__ == '__main__':
         for user, found_disturbances in disturbances.items():
             index: int = 0
             for disturbance in found_disturbances.disturbances:
-                with open('%s_%i.jpg' % (user, index), 'wb') as fh:
+                with open('%s_%s.jpg' % (user, disturbance.begin), 'wb') as fh:
                     fh.write(base64.decodebytes(bytes(disturbance.img, "utf-8")))
                     fh.close()
 
