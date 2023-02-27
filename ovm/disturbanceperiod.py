@@ -15,6 +15,7 @@ class DisturbancePeriod:
         self.begin = begin
         self.end = end
         self.hits = hits
-        self.averate_altitude = average_altitude
+        self.average_altitude = average_altitude
         self.trajectories = {}
+        self.image = None
 

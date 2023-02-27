@@ -10,3 +10,4 @@ class Complainant:
     altitude: int
     occurrences: int
     timeframe: int
+
