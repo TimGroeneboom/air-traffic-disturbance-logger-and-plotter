@@ -148,7 +148,7 @@ class Plotter:
 
         img: bytes
         with io.BytesIO() as buffer: # use buffer memory
-            plt.savefig(buffer, format='jpg')
+            plt.savefig(buffer, format='jpg', bbox_inches="tight", pad_inches=-0.1)
             buffer.seek(0)
             img = buffer.getvalue()
         plt.close()

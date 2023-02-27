@@ -17,16 +17,6 @@ from ovm.complainant import Complainant
 from ovm.utils import convert_datetime_to_int
 
 
-class EnhancedJSONEncoder(json.JSONEncoder):
-    """
-    Use this encoder to serialize dataclasses
-    """
-    def default(self, o):
-        if dataclasses.is_dataclass(o):
-            return dataclasses.asdict(o)
-        return super().default(o)
-
-
 @dataclass
 class StateIterator:
     """"
@@ -296,7 +286,7 @@ class DisturbanceFinder:
 
                 # Make plot of all callsign trajectories
                 if plot:
-                    logging.info('Generating disturbance period plot for user %s', complainant.user)
+                    logging.info('Generating disturbance period plot for user %s', disturbance_period.complainant.user)
                     disturbance_period.image = self.plotter.plot_trajectories(bbox=bbox,
                                                                               disturbance_period=disturbance_period,
                                                                               tile_zoom=zoomlevel,
@@ -307,10 +297,9 @@ class DisturbanceFinder:
                 disturbance.end = disturbance_period.end.__str__()
                 disturbance.callsigns = callsigns
                 disturbance.img = str(base64.b64encode(disturbance_period.image), 'UTF-8')
-                key_present = disturbance_period.complainant.user in disturbances
-                if not key_present:
+                if not disturbance_period.complainant.user in disturbances:
                     disturbances[disturbance_period.complainant.user] = Disturbances()
                 disturbances[disturbance_period.complainant.user].disturbances.append(disturbance)
 
         # Finally return all found disturbances
-        return json.dumps(disturbances, cls=EnhancedJSONEncoder)
+        return disturbances
