@@ -1,9 +1,6 @@
 import base64
 import collections
-import json
-import dataclasses
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import datetime
 import geopy.distance
@@ -62,7 +59,8 @@ class StateIterator:
 @dataclass
 class Disturbance:
     """
-    This is a description of a disturbance. This is serialized by the DisturbanceFinder
+    This is a description of a disturbance
+    Holds begin & end time of found disturbance, callsigns and a plotted jpg image encoded as string
     """
 
     callsigns: list = field(default_factory=list)

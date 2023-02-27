@@ -37,3 +37,11 @@ six==1.16.0
 snuggs==1.4.7
 urllib3==1.26.14
 xyzservices==2023.2.0
+
+setuptools~=65.5.1
+pip~=22.3.1
+wheel~=0.38.4
+Brotli~=1.0.9
+Jinja2~=3.1.2
+MarkupSafe~=2.1.2
+Flask~=2.2.3
