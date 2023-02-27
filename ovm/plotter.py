@@ -1,3 +1,4 @@
+import io
 import json
 import math
 import pandas as pd
@@ -14,6 +15,7 @@ from ovm.utils import convert_epsg4326_to_epsg3857
 
 class Plotter:
     # Plots states of planes onto map within given geographic bounding box
+    # Writes plot to filename
     def plot_states(self,
                     states: list,
                     bbox: tuple,
@@ -77,12 +79,12 @@ class Plotter:
 
     # Plots given disturbance period into a plot with trajectories and a geographic bounding box plus some meta-information
     # about the disturbance period
+    # Returns image as bytes
     def plot_trajectories(self,
                           disturbance_period: DisturbancePeriod,
                           bbox: tuple,
                           figsize: tuple = (15, 15),
-                          tile_zoom: int = 8,
-                          filename: str = "traffic.png"):
+                          tile_zoom: int = 8):
         # define lat lon bounding box
         lat_min = bbox[0]
         lat_max = bbox[1]
@@ -137,11 +139,17 @@ class Plotter:
                 (disturbance_period.complainant.user,
                  disturbance_period.complainant.origin[0], disturbance_period.complainant.origin[1],
                  disturbance_period.begin.__str__(), disturbance_period.end.__str__(),
-                 len(disturbance_period.disturbances.items()), disturbance_period.averate_altitude),
+                 len(disturbance_period.disturbances.items()), disturbance_period.average_altitude),
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=ax.transAxes,
                 color='black', fontsize=15,
                 bbox=***REMOVED***'facecolor': 'white', 'alpha': 1, 'pad': 10***REMOVED***)
         ax.add_patch(plt.Circle((0.5, 0.5), 0.2, color='red', alpha=1.0))
-        plt.savefig(filename, bbox_inches="tight", pad_inches=-0.1)
+
+        img: bytes
+        with io.BytesIO() as buffer: # use buffer memory
+            plt.savefig(buffer, format='jpg')
+            buffer.seek(0)
+            img = buffer.getvalue()
         plt.close()
+        return img
