@@ -1,10 +1,14 @@
 # Import the python libraries
 import argparse
-import datetime
+import base64
+from datetime import datetime, timedelta
 import logging
+from io import StringIO, BytesIO
+from PIL import Image
 from ovm import environment
 from ovm.complainant import Complainant
 from ovm.disturbancefinder import DisturbanceFinder
+from ovm.utils import convert_datetime_to_int
 
 if __name__ == '__main__':
     # parse cli arguments
@@ -53,21 +57,30 @@ if __name__ == '__main__':
                 altitude=1000,
                 occurrences=4,
                 timeframe=60)
-    
-    ]
     """
 
     # Load environment
     environment = environment.load_environment('environment.json')
 
-    #
-    now = datetime.datetime.now()
+    # Find all disturbances
+    now = datetime.now()
     disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
-    disturbances = disturbance_finder.find_disturbances(begin=now - datetime.timedelta(days=1),
+    disturbances = disturbance_finder.find_disturbances(begin=now - timedelta(hours=24),
                                                         end=now,
-                                                        complainants=complainants)
-    elapsed = datetime.datetime.now() - now
+                                                        complainants=complainants,
+                                                        zoomlevel=args.zoomlevel,
+                                                        plot=args.plot)
+    elapsed = datetime.now() - now
     logging.info('Operation took %f seconds' % elapsed.seconds)
+
+    # Write plots to disk
+    if args.plot:
+        for user, found_disturbances in disturbances.items():
+            index: int = 0
+            for disturbance in found_disturbances.disturbances:
+                with open('%s_%i.jpg' % (user, index), 'wb') as fh:
+                    fh.write(base64.decodebytes(bytes(disturbance.img, "utf-8")))
+                    fh.close()
 
     # Exit gracefully
     exit(0)
