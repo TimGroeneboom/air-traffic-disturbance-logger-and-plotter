@@ -2,6 +2,9 @@ import json
 
 
 class OpenSkyCredentials(object):
+    """
+    DataClass holding opensky credentials
+    """
     def __init__(self, username, password):
         self.username = username
         self.password = password
@@ -11,6 +14,9 @@ class OpenSkyCredentials(object):
 
 
 class MongoDBConfiguration(object):
+    """
+    DataClass holding mongodb configuration
+    """
     def __init__(self, host, port, database, collection):
         self.host = host
         self.port = port
@@ -22,6 +28,9 @@ class MongoDBConfiguration(object):
 
 
 class Environment(object):
+    """
+    DataClass containing MongoDBConfiguration and OpenSkyCredentials
+    """
     def __init__(self, opensky_credentials, mongodb_config):
         self.opensky_credentials = OpenSkyCredentials(**opensky_credentials)
         self.mongodb_config = MongoDBConfiguration(**mongodb_config)
