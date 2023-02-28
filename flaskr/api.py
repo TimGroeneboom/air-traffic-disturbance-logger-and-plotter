@@ -4,7 +4,7 @@ from flask import Blueprint
 from ovm.complainant import Complainant
 from ovm.disturbancefinder import DisturbanceFinder
 from ovm.environment import load_environment
-from ovm.utils import DataclassJSONEncoder
+from ovm.utils import DataclassJSONEncoder, convert_int_to_datetime
 
 # Create api page
 api_page = Blueprint('api', __name__, template_folder='templates')
@@ -42,3 +42,29 @@ def find_disturbance(user,
                                                         zoomlevel=zoomlevel,
                                                         plot=plot)
     return json.dumps(disturbances, cls=DataclassJSONEncoder, indent=4)
+
+
+@api_page.route('/api/find_flights/<string:user>/'
+                '<float:lat>/<float:lon>/'
+                '<int:radius>/<int:altitude>/'
+                '<int:begin>/<int:end>/'
+                '<int:plot>/<int:zoomlevel>')
+def find_flights(user,
+                 lat,
+                 lon,
+                 radius,
+                 altitude,
+                 begin,
+                 end,
+                 plot,
+                 zoomlevel):
+    disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
+    flights = disturbance_finder.find_flights(origin=(lat, lon),
+                                              begin=convert_int_to_datetime(begin),
+                                              end=convert_int_to_datetime(end),
+                                              radius=radius,
+                                              altitude=altitude,
+                                              title=user,
+                                              plot=plot,
+                                              zoomlevel=zoomlevel)
+    return json.dumps(flights, cls=DataclassJSONEncoder, indent=4)
