@@ -1,4 +1,6 @@
 import io
+from datetime import datetime
+
 import matplotlib
 import pandas as pd
 import geopandas as gpd
@@ -83,11 +85,15 @@ class Plotter:
         plt.savefig(filename, bbox_inches="tight", pad_inches=-0.1)
         plt.close()
 
-    # Plots given disturbance period into a plot with trajectories and a geographic bounding box plus some meta-information
+    # Plots trajectories into a plot with trajectories and a geographic bounding box plus some meta-information
     # about the disturbance period
     # Returns image as bytes
     def plot_trajectories(self,
-                          disturbance_period: DisturbancePeriod,
+                          title: str,
+                          origin: tuple,
+                          begin: datetime,
+                          end: datetime,
+                          trajectories: dict,
                           bbox: tuple,
                           figsize: tuple = (15, 15),
                           tile_zoom: int = 8):
@@ -97,11 +103,16 @@ class Plotter:
         lon_min = bbox[2]
         lon_max = bbox[3]
 
+        average_altitude = 0
+        idx = 0
         linestrings = {}
-        for key, value in disturbance_period.trajectories.items():
-            if len(value) >= 2:
-                linestring: LineString = LineString(value)
+        for key, value in trajectories.items():
+            if len(value.coords) >= 2:
+                linestring: LineString = LineString(value.coords)
                 linestrings[key] = linestring
+                average_altitude += value.average_altitude
+                idx += 1
+        average_altitude /= idx
 
         data = []
         for key, value in linestrings.items():
@@ -119,8 +130,7 @@ class Plotter:
                                                      [lon_max, lat_max],
                                                      [lon_max, lat_min]])],
                                   crs="EPSG:4326")
-        center = gpd.GeoDataFrame(geometry=[Point([disturbance_period.complainant.origin[1],
-                                                   disturbance_period.complainant.origin[0]])],
+        center = gpd.GeoDataFrame(geometry=[Point([origin[1], origin[0]])],
                                   crs="EPSG:4326")
         # perform spatial join
         gdf = gpd.sjoin(gdf, bounds)
@@ -142,10 +152,8 @@ class Plotter:
         ax.get_yaxis().set_visible(False)
         ax.text(0.05, 0.10,
                 '%s\nlocation: [%f, %f]\nperiod: [%s, %s]\nflights: %i\naverage altitude: %im' %
-                (disturbance_period.complainant.user,
-                 disturbance_period.complainant.origin[0], disturbance_period.complainant.origin[1],
-                 disturbance_period.begin.__str__(), disturbance_period.end.__str__(),
-                 len(disturbance_period.disturbances.items()), disturbance_period.average_altitude),
+                (title, origin[0], origin[1], begin.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S"),
+                 len(trajectories.items()), average_altitude),
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=ax.transAxes,
                 color='black', fontsize=15,

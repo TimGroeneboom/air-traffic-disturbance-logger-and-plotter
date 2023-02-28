@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Results</title>
+</head>
+<body>
+<h1>Results</h1>
+{% for disturbance in disturbances %}
+<br>
+{{ disturbance.begin }} - {{disturbance.end}}
+</br>
+<br>
+{% for callsign in disturbance.callsigns %}
+{{callsign}},
+{% endfor %}
+</br>
+{% if disturbance.plot %}
+<br><img src = "{{ url_for('static', filename=disturbance.file)}}"></br>
+{% endif %}
+{% endfor %}
+</body>
+</html>

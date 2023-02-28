@@ -11,6 +11,7 @@ from ovm.disturbanceperiod import DisturbancePeriod
 from ovm.environment import Environment
 from ovm.plotter import Plotter
 from ovm.complainant import Complainant
+from ovm.trajectory import Trajectory
 from ovm.utils import convert_datetime_to_int
 
 
@@ -56,6 +57,9 @@ class StateIterator:
     complainant: Complainant = None
 
 
+
+
+
 @dataclass
 class Disturbance:
     """
@@ -80,6 +84,7 @@ class Disturbances:
     disturbances: list = field(default_factory=list)
 
 
+
 class DisturbanceFinder:
     """
     The DisturbanceFinder finds all disturbances that match the complainant parameters (see @Complainant) It connects
@@ -99,6 +104,138 @@ class DisturbanceFinder:
 
         # Create plotter
         self.plotter = Plotter()
+
+        # TODO: get callsigns to ignore from database
+        # Ignore certain callsigns
+        self.ignore_callsigns = [
+            'LIFELN1'
+        ]
+
+    def find_flights(self,
+                     origin: tuple,
+                     begin: datetime,
+                     end: datetime,
+                     radius: int,
+                     altitude: int,
+                     plot: bool = False,
+                     title: str = '',
+                     zoomlevel: int = 14):
+        # Create disturbances
+        disturbances: Disturbances = Disturbances()
+        disturbance: Disturbance = Disturbance()
+        disturbances.disturbances.append(disturbance)
+        disturbance.begin = begin.strftime("%Y-%m-%d %H:%M:%S")
+        disturbance.end = end.strftime("%Y-%m-%d %H:%M:%S")
+
+        #
+        trajectories: dict = {}
+
+        # Get the collection of states from the mongo db
+        # A state holds all plane information (callsign, location, altitude, etc..) on a specific timestamp
+        # The time is the key value of a state and is ordered accordingly in the mongo database
+        # Time is an int64 holding the timestamp in the following format %Y%m%d%H%M%S
+        states_collection = self.mongo_client[self.environment.mongodb_config.database][
+            self.environment.mongodb_config.collection]
+        cursor = states_collection.find({'Time': {'$gte': convert_datetime_to_int(begin)}})
+
+        # Iterate through states
+        for document in cursor:
+            # Get timestamp as integer value and as datetime object
+            timestamp_int = document['Time']
+            timestamp = utils.convert_int_to_datetime(timestamp_int)
+
+            # bail if timestamp exceeded end
+            if timestamp > end:
+                break
+
+            # Get all states
+            states = document['States']
+
+            # Iterate through states
+            for state in states:
+                # Get callsign
+                callsign = utils.remove_whitespace(state['callsign'])
+
+                # Ignore specified callsigns
+                if utils.list_contains_value(arr=self.ignore_callsigns,
+                                             value=callsign):
+                    continue
+
+                # Obtain altitude
+                geo_altitude = state['geo_altitude']
+
+                # Ignore grounded planes
+                if geo_altitude is None:
+                    continue
+
+                # obtain flight coordinate
+                flight_coord = (state['latitude'], state['longitude'])
+
+                # Ignore if callsign already present
+                if not utils.list_contains_value(disturbance.callsigns, callsign):
+                    # Check if altitude is lower than altitude and if distance is within specified radius
+                    if geo_altitude < altitude:
+                        # Obtain lat lon from location to compute distance from complainant origin
+                        distance = geopy.distance.distance(origin, flight_coord).meters
+                        if distance < radius:
+                            disturbance.callsigns.append(callsign)
+
+                            # obtain trajectory if plot is needed
+                            if plot:
+                                trajectories[callsign] = Trajectory()
+                                trajectories[callsign].callsign = callsign
+                                trajectories[callsign].coords.append((flight_coord[1], flight_coord[0]))
+                                trajectories[callsign].average_altitude += geo_altitude
+
+                                timestamp_int = document['Time']
+                                items_before = states_collection.find({'Time': {'$gte': timestamp_int}}).limit(4)
+                                items_after = states_collection.find({'Time': {'$lte': timestamp_int}}).sort([('Time', pymongo.DESCENDING)]).limit(4)
+                                dictionary = {}
+                                for doc in items_before:
+                                    timestamp_int = doc['Time']
+                                    if timestamp_int not in dictionary.keys():
+                                        dictionary[timestamp_int] = doc['States']
+                                for doc in items_after:
+                                    timestamp_int = doc['Time']
+                                    if timestamp_int not in dictionary.keys():
+                                        dictionary[timestamp_int] = doc['States']
+
+                                ordered_dict = collections.OrderedDict(sorted(dictionary.items()))
+                                for key, value in ordered_dict.items():
+                                    for other_state in value:
+                                        if utils.remove_whitespace(other_state['callsign']) == callsign:
+                                            new_altitude = other_state['geo_altitude']
+                                            if new_altitude is not None:
+                                                # Obtain lat lon from location to compute distance from complainant origin
+                                                new_coord = (other_state['latitude'], other_state['longitude'])
+                                                distance = geopy.distance.distance(origin, new_coord)
+                                                if distance < radius * 2:
+                                                    trajectories[callsign].average_altitude += new_altitude
+                                                    trajectories[callsign].coords.append((new_coord[1], new_coord[0]))
+
+                                coord_num = len(trajectories[callsign].coords)
+                                if coord_num > 0:
+                                    trajectories[callsign].average_altitude /= len(trajectories[callsign].coords)
+
+        if plot:
+            # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
+            # trajectories
+            bbox = utils.get_geo_bbox_around_coord(origin, (radius + 1000) / 1000.0)
+
+            # Make plot of all callsign trajectories
+            logging.info('Generating trajectory plot')
+            image = self.plotter.plot_trajectories(bbox=bbox,
+                                                   title=title,
+                                                   origin=origin,
+                                                   begin=begin,
+                                                   end=end,
+                                                   trajectories=trajectories,
+                                                   tile_zoom=zoomlevel)
+            disturbance.img = str(base64.b64encode(image), 'UTF-8')
+        else:
+            disturbance.img = None
+
+        return disturbances
 
     def find_disturbances(self,
                           begin: datetime,
@@ -127,12 +264,6 @@ class DisturbanceFinder:
         states_collection = self.mongo_client[self.environment.mongodb_config.database][
             self.environment.mongodb_config.collection]
         cursor = states_collection.find({'Time': {'$gte': convert_datetime_to_int(begin)}})
-
-        # TODO: get callsigns to ignore from database
-        # Ignore certain callsigns
-        ignore_callsigns = [
-            'LIFELN1'
-        ]
 
         # Log user info
         logging.info('Checking disturbances for %i users' % len(complainants))
@@ -169,17 +300,18 @@ class DisturbanceFinder:
                     # Get callsign
                     callsign = utils.remove_whitespace(state['callsign'])
 
+                    geo_altitude = state['geo_altitude']
+
                     # Ignore grounded planes
-                    if state['baro_altitude'] is None:
+                    if geo_altitude is None:
                         continue
 
                     # Ignore specified callsigns
-                    if utils.list_contains_value(arr=ignore_callsigns,
-                                                 value=callsign):
+                    if utils.list_contains_value(arr=self.ignore_callsigns, value=callsign):
                         continue
 
                     # Check if altitude is lower than altitude and if distance is within specified radius
-                    if state['baro_altitude'] < state_iterator.complainant.altitude:
+                    if geo_altitude < state_iterator.complainant.altitude:
                         # Obtain lat lon from location to compute distance from complainant origin
                         coord = (state['latitude'], state['longitude'])
                         distance = geopy.distance.distance(state_iterator.complainant.origin, coord).meters
@@ -190,7 +322,7 @@ class DisturbanceFinder:
                                 state_iterator.disturbance_hits += 1
                                 state_iterator.callsigns_in_disturbance.append(callsign)
 
-                            state_iterator.total_altitude += state['baro_altitude']
+                            state_iterator.total_altitude += geo_altitude
 
                             # Check if there already is a disturbance in this timeframe, otherwise create a new
                             # disturbance
@@ -245,7 +377,7 @@ class DisturbanceFinder:
                                                                average_altitude=state_iterator.total_altitude / state_iterator.disturbance_hits)
                         state_iterator.disturbance_periods.append(disturbance_period)
 
-            # Calc trajectories for generate complaints for callsigns
+            # Calc trajectories for callsigns
             for disturbance_period in state_iterator.disturbance_periods:
                 # Holds all callsigns for this period
                 callsigns: list = []
@@ -258,54 +390,72 @@ class DisturbanceFinder:
                               (disturbance_duration.seconds / 60),
                               disturbance_period.begin.__str__(), disturbance_period.end.__str__()))
 
-                # Create trajectories for complaint
-                logging.info('Collecting trajectories for %i flights' % (len(disturbance_period.disturbances.items())))
-                for callsign, datetime_int in disturbance_period.disturbances.items():
-                    # Gather states before and after this entry to plot a trajectory for callsign
-                    dictionary = {}
-                    items_before = states_collection.find({'Time': {'$gte': datetime_int}}).limit(4)
-                    items_after = states_collection.find({'Time': {'$lte': datetime_int}}).sort(
-                        [('Time', pymongo.DESCENDING)]).limit(4)
-                    for doc in items_before:
-                        timestamp_int = doc['Time']
-                        if timestamp_int not in dictionary.keys():
-                            dictionary[timestamp_int] = doc['States']
-                    for doc in items_after:
-                        timestamp_int = doc['Time']
-                        if timestamp_int not in dictionary.keys():
-                            dictionary[timestamp_int] = doc['States']
-
-                    # Order found states and create the trajectory of disturbance callsign
-                    trajectory = []
-                    ordered_dict = collections.OrderedDict(sorted(dictionary.items()))
-                    for key, value in ordered_dict.items():
-                        for state in value:
-                            if utils.remove_whitespace(state['callsign']) == callsign:
-                                coord = (state['longitude'], state['latitude'])
-                                trajectory.append(coord)
-
-                    # Add it to the trajectories of this complaint and store callsign
-                    disturbance_period.trajectories[callsign] = trajectory
-                    callsigns.append(callsign)
-
-                # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
-                # trajectories
-                bbox = utils.get_geo_bbox_around_coord(disturbance_period.complainant.origin,
-                                                       (complainant.radius + 1000) / 1000.0)
-
-                # Make plot of all callsign trajectories
+                # Create plot if necessary
                 if plot:
-                    logging.info('Generating disturbance period plot for user %s', disturbance_period.complainant.user)
-                    disturbance_period.image = self.plotter.plot_trajectories(bbox=bbox,
-                                                                              disturbance_period=disturbance_period,
-                                                                              tile_zoom=zoomlevel,
-                                                                              figsize=(10, 10))
+                    # Create trajectories for complaint
+                    logging.info('Collecting trajectories for %i flights' % (len(disturbance_period.disturbances.items())))
+                    for callsign, datetime_int in disturbance_period.disturbances.items():
+                        # Gather states before and after this entry to plot a trajectory for callsign
+                        dictionary = {}
+                        items_before = states_collection.find({'Time': {'$gte': datetime_int}}).limit(4)
+                        items_after = states_collection.find({'Time': {'$lte': datetime_int}}).sort(
+                            [('Time', pymongo.DESCENDING)]).limit(4)
+                        for doc in items_before:
+                            timestamp_int = doc['Time']
+                            if timestamp_int not in dictionary.keys():
+                                dictionary[timestamp_int] = doc['States']
+                        for doc in items_after:
+                            timestamp_int = doc['Time']
+                            if timestamp_int not in dictionary.keys():
+                                dictionary[timestamp_int] = doc['States']
+
+                        # Order found states and create the trajectory of disturbance callsign
+                        trajectory: Trajectory = Trajectory()
+                        trajectory.callsign = callsign
+                        trajectory.average_altitude = 0
+                        ordered_dict = collections.OrderedDict(sorted(dictionary.items()))
+                        for key, value in ordered_dict.items():
+                            for state in value:
+                                if utils.remove_whitespace(state['callsign']) == callsign:
+                                    if state['geo_altitude'] is not None:
+                                        trajectory.coords.append((state['longitude'], state['latitude']))
+                                        trajectory.average_altitude += state['geo_altitude']
+
+                        # Add it to the trajectories of this complaint and store callsign
+                        trajectory.average_altitude /= len(trajectory.coords)
+                        disturbance_period.trajectories[callsign] = trajectory
+                        callsigns.append(callsign)
+
+                        # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
+                        # trajectories
+                        bbox = utils.get_geo_bbox_around_coord(disturbance_period.complainant.origin,
+                                                               (complainant.radius + 1000) / 1000.0)
+
+                        # Make plot of all callsign trajectories
+                        logging.info('Generating disturbance period plot for user %s',
+                                     disturbance_period.complainant.user)
+                        disturbance_period.image = self.plotter.plot_trajectories(bbox=bbox,
+                                                                                  trajectories=disturbance_period.trajectories,
+                                                                                  origin=disturbance_period.complainant.origin,
+                                                                                  title=disturbance_period.complainant.user,
+                                                                                  begin=disturbance_period.begin,
+                                                                                  end=disturbance_period.end,
+                                                                                  tile_zoom=zoomlevel)
+                else:
+                    for callsign, datetime_int in disturbance_period.disturbances.items():
+                        callsigns.append(callsign)
+
+
                 # Create disturbance
                 disturbance: Disturbance = Disturbance()
                 disturbance.begin = disturbance_period.begin.__str__()
                 disturbance.end = disturbance_period.end.__str__()
                 disturbance.callsigns = callsigns
-                disturbance.img = str(base64.b64encode(disturbance_period.image), 'UTF-8')
+                if plot:
+                    disturbance.img = str(base64.b64encode(disturbance_period.image), 'UTF-8')
+                else:
+                    disturbance.img = {}
+
                 if not disturbance_period.complainant.user in disturbances:
                     disturbances[disturbance_period.complainant.user] = Disturbances()
                 disturbances[disturbance_period.complainant.user].disturbances.append(disturbance)
