@@ -3,6 +3,12 @@ from dataclasses import dataclass, field
 from ovm.complainant import Complainant
 
 @dataclass
+class Callsign:
+    callsign: str = field(default_factory=str)
+
+    datetime: int = field(default_factory=int)
+
+@dataclass
 class Disturbance:
     """
     This is a description of a disturbance
