@@ -7,7 +7,6 @@ from ovm import environment
 from ovm.complainant import Complainant
 from ovm.disturbancefinder import DisturbanceFinder
 
-
 if __name__ == '__main__':
     # parse cli arguments
     parser = argparse.ArgumentParser()
@@ -74,6 +73,28 @@ if __name__ == '__main__':
                 with open('%s_%s.jpg' % (user, disturbance.begin), 'wb') as fh:
                     fh.write(base64.decodebytes(bytes(disturbance.img, "utf-8")))
                     fh.close()
+
+    """
+    now = datetime.now()
+    disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
+    disturbances = disturbance_finder.find_flights(begin=now - timedelta(hours=24),
+                                                   end=now,
+                                                   radius=1000,
+                                                   origin=(52.402321, 4.916406),  # Amsterdamse Bos
+                                                   altitude=1000,
+                                                   zoomlevel=args.zoomlevel,
+                                                   plot=args.plot)
+    elapsed = datetime.now() - now
+    logging.info('Operation took %f seconds' % elapsed.seconds)
+
+    # Write plots to disk
+    if args.plot:
+        for disturbance in disturbances.disturbances:
+            if disturbance.img is not None:
+                with open('%s_%s.jpg' % ('test', disturbance.begin), 'wb') as fh:
+                    fh.write(base64.decodebytes(bytes(disturbance.img, "utf-8")))
+                    fh.close()
+    """
 
     # Exit gracefully
     exit(0)
