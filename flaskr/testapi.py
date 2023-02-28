@@ -7,7 +7,7 @@ from dataclasses import field
 import requests
 from flask import Blueprint, request, render_template
 from flaskr.filehandler import register_temp_file
-from ovm.utils import convert_datetime_to_int
+from ovm.utils import convert_datetime_to_int, convert_int_to_datetime
 
 files_to_delete = []
 
@@ -64,7 +64,11 @@ def find_disturbances():
                     render_disturbance.file = ""
                     render_disturbance.begin = disturbance['begin']
                     render_disturbance.end = disturbance['end']
-                    render_disturbance.callsigns = disturbance['callsigns']
+                    render_disturbance.callsigns = []
+                    for callsign in disturbance['callsigns']:
+                        render_disturbance.callsigns.append('%s : %s ' % (callsign['callsign'],
+                                                                          convert_int_to_datetime(callsign['datetime']).__str__()))
+
                     if disturbance['img'] is not None and len(disturbance['img']) > 0:
                         filename = os.path.join(temp_dir_name, '%i_%s_%s.jpg' % (uuid.uuid4().int,
                                                                                  user,
@@ -113,7 +117,11 @@ def find_flights():
                 render_disturbance.file = ""
                 render_disturbance.begin = disturbance['begin']
                 render_disturbance.end = disturbance['end']
-                render_disturbance.callsigns = disturbance['callsigns']
+                render_disturbance.callsigns = []
+                for callsign in disturbance['callsigns']:
+                    render_disturbance.callsigns.append('%s : %s ' % (callsign['callsign'],
+                                                                      convert_int_to_datetime(callsign['datetime']).__str__()))
+
                 if disturbance['img'] is not None and len(disturbance['img']) > 0:
                     filename = os.path.join(temp_dir_name, '%i_%s_%s.jpg' % (uuid.uuid4().int,
                                                                              user,

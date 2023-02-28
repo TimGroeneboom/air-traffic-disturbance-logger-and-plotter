@@ -7,7 +7,7 @@ import geopy.distance
 import pymongo
 from pymongo import MongoClient
 from ovm import utils
-from ovm.disturbanceperiod import DisturbancePeriod, Disturbances, Disturbance
+from ovm.disturbanceperiod import DisturbancePeriod, Disturbances, Disturbance, Callsign
 from ovm.environment import Environment
 from ovm.plotter import plot_trajectories
 from ovm.complainant import Complainant
@@ -151,7 +151,7 @@ class DisturbanceFinder:
                         # Obtain lat lon from location to compute distance from complainant origin
                         distance = geopy.distance.distance(origin, flight_coord).meters
                         if distance < radius:
-                            disturbance.callsigns.append(callsign)
+                            disturbance.callsigns.append(Callsign(callsign, timestamp_int))
 
                             # obtain trajectory if plot is needed
                             if plot:
@@ -399,26 +399,27 @@ class DisturbanceFinder:
                         # Add it to the trajectories of this complaint and store callsign
                         trajectory.average_altitude /= len(trajectory.coords)
                         disturbance_period.trajectories[callsign] = trajectory
-                        callsigns.append(callsign)
-
-                        # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
-                        # trajectories
-                        bbox = utils.get_geo_bbox_around_coord(disturbance_period.complainant.origin,
-                                                               (complainant.radius + 1000) / 1000.0)
-
-                        # Make plot of all callsign trajectories
-                        logging.info('Generating disturbance period plot for user %s',
-                                     disturbance_period.complainant.user)
-                        disturbance_period.plot = plot_trajectories(bbox=bbox,
-                                                                    trajectories=disturbance_period.trajectories,
-                                                                    origin=disturbance_period.complainant.origin,
-                                                                    title=disturbance_period.complainant.user,
-                                                                    begin=disturbance_period.begin,
-                                                                    end=disturbance_period.end,
-                                                                    tile_zoom=zoomlevel)
+                        callsigns.append(Callsign(callsign, datetime_int))
                 else:
                     for callsign, datetime_int in disturbance_period.disturbances.items():
-                        callsigns.append(callsign)
+                        callsigns.append(Callsign(callsign, datetime_int))
+
+                if plot:
+                    # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
+                    # trajectories
+                    bbox = utils.get_geo_bbox_around_coord(disturbance_period.complainant.origin,
+                                                           (complainant.radius + 1000) / 1000.0)
+
+                    # Make plot of all callsign trajectories
+                    logging.info('Generating disturbance period plot for user %s',
+                                 disturbance_period.complainant.user)
+                    disturbance_period.plot = plot_trajectories(bbox=bbox,
+                                                                trajectories=disturbance_period.trajectories,
+                                                                origin=disturbance_period.complainant.origin,
+                                                                title=disturbance_period.complainant.user,
+                                                                begin=disturbance_period.begin,
+                                                                end=disturbance_period.end,
+                                                                tile_zoom=zoomlevel)
 
                 # Create disturbance
                 disturbance: Disturbance = Disturbance()
