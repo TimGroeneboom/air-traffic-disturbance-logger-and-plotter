@@ -1,18 +1,35 @@
 import base64
+import logging
+import uuid
 from datetime import datetime, timedelta
 import os
-from dataclasses import dataclass, field
+from dataclasses import field
 import requests
 from flask import Blueprint, request, render_template
-
+from flaskr.filehandler import register_temp_file
 from ovm.utils import convert_datetime_to_int
+
+files_to_delete = []
 
 # Create test api page
 test_api_page = Blueprint('testapi', __name__, template_folder='templates')
 
+# Define directories
 static_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static')
 if not os.path.exists(static_dir):
     os.mkdir(static_dir)
+temp_dir_name = 'temp'
+temp_dir = os.path.join(static_dir, temp_dir_name)
+if not os.path.exists(temp_dir):
+    os.mkdir(temp_dir)
+
+
+def clear_temp_dir():
+    # Remove previous temp files
+    for filename in os.listdir(temp_dir):
+        f = os.path.join(temp_dir, filename)
+        logging.info('Removing old %s temp file' % filename)
+        os.remove(f)
 
 
 class RenderDisturbance:
@@ -49,16 +66,16 @@ def find_disturbances():
                     render_disturbance.end = disturbance['end']
                     render_disturbance.callsigns = disturbance['callsigns']
                     if disturbance['img'] is not None and len(disturbance['img']) > 0:
-                        temp_dir = 'temp'
-                        if not os.path.exists(os.path.join(static_dir, temp_dir)):
-                            os.mkdir(os.path.join(static_dir, temp_dir))
-
-                        filename = os.path.join(temp_dir, '%s_%s.jpg' % (user, disturbance['begin']))
-                        with open(os.path.join(static_dir, filename), 'wb') as fh:
+                        filename = os.path.join(temp_dir_name, '%i_%s_%s.jpg' % (uuid.uuid4().int,
+                                                                                 user,
+                                                                                 disturbance['begin']))
+                        file_to_disk = os.path.join(static_dir, filename)
+                        with open(file_to_disk, 'wb') as fh:
                             fh.write(base64.decodebytes(bytes(disturbance['img'], "utf-8")))
                             fh.close()
                         render_disturbance.file = filename
                         render_disturbance.plot = True
+                        register_temp_file(file_to_disk)
                     else:
                         render_disturbance.plot = False
                     render_disturbances.append(render_disturbance)
@@ -98,16 +115,16 @@ def find_flights():
                 render_disturbance.end = disturbance['end']
                 render_disturbance.callsigns = disturbance['callsigns']
                 if disturbance['img'] is not None and len(disturbance['img']) > 0:
-                    temp_dir = 'temp'
-                    if not os.path.exists(os.path.join(static_dir, temp_dir)):
-                        os.mkdir(os.path.join(static_dir, temp_dir))
-
-                    filename = os.path.join(temp_dir, '%s_%s.jpg' % (user, disturbance['begin']))
-                    with open(os.path.join(static_dir, filename), 'wb') as fh:
+                    filename = os.path.join(temp_dir_name, '%i_%s_%s.jpg' % (uuid.uuid4().int,
+                                                                             user,
+                                                                             disturbance['begin']))
+                    file_to_disk = os.path.join(static_dir, filename)
+                    with open(file_to_disk, 'wb') as fh:
                         fh.write(base64.decodebytes(bytes(disturbance['img'], "utf-8")))
                         fh.close()
                     render_disturbance.file = filename
                     render_disturbance.plot = True
+                    register_temp_file(file_to_disk)
                 else:
                     render_disturbance.plot = False
                 render_disturbances.append(render_disturbance)

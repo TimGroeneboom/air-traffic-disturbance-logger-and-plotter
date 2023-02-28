@@ -1,5 +1,7 @@
+import argparse
+import logging
 from flask import Flask
-from flaskr.testapi import test_api_page
+from flaskr.testapi import test_api_page, clear_temp_dir
 from flaskr.api import api_page
 
 # Create app
@@ -11,4 +13,19 @@ app.register_blueprint(api_page)
 
 # Run
 if __name__ == '__main__':
+    # parse cli arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--loglevel',
+                        type=str.upper,
+                        default='INFO',
+                        help='LOG Level (DEBUG, INFO, WARNING, ERROR, CRITICAL)')
+    args = parser.parse_args()
+
+    # Set log level
+    logging.basicConfig(level=args.loglevel)
+
+    # Clear temp dir
+    clear_temp_dir()
+
+    # Run app
     app.run()

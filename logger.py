@@ -63,7 +63,7 @@ if __name__ == '__main__':
             plane_logger.log(bbox=(args.bbox[0], args.bbox[1], args.bbox[2], args.bbox[3]),
                              plot_options=PlotOptions(args.plot,
                                                       args.zoomlevel,
-                                                      ('%s%i.png' % (args.outputfilename, runs))))
+                                                      ('%s%i.jpg' % (args.outputfilename, runs))))
 
             time_elapsed = time.perf_counter() - current_time
             sleep_interval = sleep_interval - time_elapsed

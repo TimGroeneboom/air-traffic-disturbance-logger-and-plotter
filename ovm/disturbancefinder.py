@@ -7,9 +7,9 @@ import geopy.distance
 import pymongo
 from pymongo import MongoClient
 from ovm import utils
-from ovm.disturbanceperiod import DisturbancePeriod
+from ovm.disturbanceperiod import DisturbancePeriod, Disturbances, Disturbance
 from ovm.environment import Environment
-from ovm.plotter import Plotter
+from ovm.plotter import plot_trajectories
 from ovm.complainant import Complainant
 from ovm.trajectory import Trajectory
 from ovm.utils import convert_datetime_to_int
@@ -57,34 +57,6 @@ class StateIterator:
     complainant: Complainant = None
 
 
-
-
-
-@dataclass
-class Disturbance:
-    """
-    This is a description of a disturbance
-    Holds begin & end time of found disturbance, callsigns and a plotted jpg image encoded as string
-    """
-
-    callsigns: list = field(default_factory=list)
-
-    begin: str = field(default_factory=str)
-
-    end: str = field(default_factory=str)
-
-    img: str = field(default_factory=str)
-
-
-@dataclass
-class Disturbances:
-    """
-    Holds all found Disturbances in a dictionary
-    """
-    disturbances: list = field(default_factory=list)
-
-
-
 class DisturbanceFinder:
     """
     The DisturbanceFinder finds all disturbances that match the complainant parameters (see @Complainant) It connects
@@ -102,9 +74,6 @@ class DisturbanceFinder:
         self.mongo_client = MongoClient(environment.mongodb_config.host,
                                         environment.mongodb_config.port)
 
-        # Create plotter
-        self.plotter = Plotter()
-
         # TODO: get callsigns to ignore from database
         # Ignore certain callsigns
         self.ignore_callsigns = [
@@ -120,6 +89,10 @@ class DisturbanceFinder:
                      plot: bool = False,
                      title: str = '',
                      zoomlevel: int = 14):
+        """
+
+        """
+
         # Create disturbances
         disturbances: Disturbances = Disturbances()
         disturbance: Disturbance = Disturbance()
@@ -189,7 +162,8 @@ class DisturbanceFinder:
 
                                 timestamp_int = document['Time']
                                 items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(4)
-                                items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort([('Time', pymongo.DESCENDING)]).limit(4)
+                                items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
+                                    [('Time', pymongo.DESCENDING)]).limit(4)
                                 dictionary = ***REMOVED******REMOVED***
                                 for doc in items_before:
                                     timestamp_int = doc['Time']
@@ -224,13 +198,13 @@ class DisturbanceFinder:
 
             # Make plot of all callsign trajectories
             logging.info('Generating trajectory plot')
-            image = self.plotter.plot_trajectories(bbox=bbox,
-                                                   title=title,
-                                                   origin=origin,
-                                                   begin=begin,
-                                                   end=end,
-                                                   trajectories=trajectories,
-                                                   tile_zoom=zoomlevel)
+            image = plot_trajectories(bbox=bbox,
+                                      title=title,
+                                      origin=origin,
+                                      begin=begin,
+                                      end=end,
+                                      trajectories=trajectories,
+                                      tile_zoom=zoomlevel)
             disturbance.img = str(base64.b64encode(image), 'UTF-8')
         else:
             disturbance.img = None
@@ -350,7 +324,7 @@ class DisturbanceFinder:
                                                                        disturbances=state_iterator.disturbances.copy(),
                                                                        begin=state_iterator.disturbance_begin,
                                                                        end=state_iterator.last_disturbance,
-                                                                       hits=state_iterator.disturbance_hits,
+                                                                       flights=state_iterator.disturbance_hits,
                                                                        average_altitude=state_iterator.total_altitude / state_iterator.disturbance_hits)
                                 state_iterator.disturbance_periods.append(disturbance_period)
 
@@ -373,7 +347,7 @@ class DisturbanceFinder:
                                                                disturbances=state_iterator.disturbances.copy(),
                                                                begin=state_iterator.disturbance_begin,
                                                                end=state_iterator.last_disturbance,
-                                                               hits=state_iterator.disturbance_hits,
+                                                               flights=state_iterator.disturbance_hits,
                                                                average_altitude=state_iterator.total_altitude / state_iterator.disturbance_hits)
                         state_iterator.disturbance_periods.append(disturbance_period)
 
@@ -393,7 +367,8 @@ class DisturbanceFinder:
                 # Create plot if necessary
                 if plot:
                     # Create trajectories for complaint
-                    logging.info('Collecting trajectories for %i flights' % (len(disturbance_period.disturbances.items())))
+                    logging.info(
+                        'Collecting trajectories for %i flights' % (len(disturbance_period.disturbances.items())))
                     for callsign, datetime_int in disturbance_period.disturbances.items():
                         # Gather states before and after this entry to plot a trajectory for callsign
                         dictionary = ***REMOVED******REMOVED***
@@ -434,17 +409,16 @@ class DisturbanceFinder:
                         # Make plot of all callsign trajectories
                         logging.info('Generating disturbance period plot for user %s',
                                      disturbance_period.complainant.user)
-                        disturbance_period.image = self.plotter.plot_trajectories(bbox=bbox,
-                                                                                  trajectories=disturbance_period.trajectories,
-                                                                                  origin=disturbance_period.complainant.origin,
-                                                                                  title=disturbance_period.complainant.user,
-                                                                                  begin=disturbance_period.begin,
-                                                                                  end=disturbance_period.end,
-                                                                                  tile_zoom=zoomlevel)
+                        disturbance_period.plot = plot_trajectories(bbox=bbox,
+                                                                    trajectories=disturbance_period.trajectories,
+                                                                    origin=disturbance_period.complainant.origin,
+                                                                    title=disturbance_period.complainant.user,
+                                                                    begin=disturbance_period.begin,
+                                                                    end=disturbance_period.end,
+                                                                    tile_zoom=zoomlevel)
                 else:
                     for callsign, datetime_int in disturbance_period.disturbances.items():
                         callsigns.append(callsign)
-
 
                 # Create disturbance
                 disturbance: Disturbance = Disturbance()
@@ -452,7 +426,7 @@ class DisturbanceFinder:
                 disturbance.end = disturbance_period.end.__str__()
                 disturbance.callsigns = callsigns
                 if plot:
-                    disturbance.img = str(base64.b64encode(disturbance_period.image), 'UTF-8')
+                    disturbance.img = str(base64.b64encode(disturbance_period.plot), 'UTF-8')
                 else:
                     disturbance.img = ***REMOVED******REMOVED***
 
