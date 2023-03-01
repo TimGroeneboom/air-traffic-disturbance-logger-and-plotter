@@ -7,9 +7,7 @@ from dataclasses import field
 import requests
 from flask import Blueprint, request, render_template
 from requests import Response
-
 from ovm.utils import convert_datetime_to_int, convert_int_to_datetime
-import filehandler
 
 # Create test api page
 test_api_page = Blueprint('testapi', __name__, template_folder='templates')
