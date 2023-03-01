@@ -1,7 +1,7 @@
 import argparse
 import logging
 from flask import Flask
-from flaskr.testapi import test_api_page, clear_temp_dir
+from flaskr.testapi import test_api_page
 from flaskr.api import api_page
 
 # Create app
@@ -23,9 +23,6 @@ if __name__ == '__main__':
 
     # Set log level
     logging.basicConfig(level=args.loglevel)
-
-    # Clear temp dir
-    clear_temp_dir()
 
     # Run app
     app.run()

@@ -1,4 +1,5 @@
 import io
+import threading
 from datetime import datetime
 import matplotlib
 import pandas as pd
@@ -16,6 +17,7 @@ See : https://matplotlib.org/stable/users/explain/backends.html
 """
 matplotlib.use('agg')
 
+lock = threading.Lock()
 
 def plot_trajectories(title: str,
                       origin: tuple,
@@ -82,6 +84,9 @@ def plot_trajectories(title: str,
     bounds_3857 = bounds.to_crs(epsg=3857)  # web mercator
     gdf_3857 = gdf.to_crs(epsg=3857)  # web mercator
     center_3857 = center.to_crs(epsg=3857)  # web mercator
+
+    # Because matplotlib is not multi threaded, lock
+    lock.acquire()
     f, ax = plt.subplots(figsize=figsize)
     center_3857.plot(ax=ax, alpha=0.7, edgecolor="blue")
     bounds_3857.plot(ax=ax, alpha=0.0, edgecolor="blue")
@@ -109,6 +114,10 @@ def plot_trajectories(title: str,
         buffer.seek(0)
         img = buffer.getvalue()
     plt.close()
+
+    # Release lock
+    lock.release()
+
     return img
 
 
@@ -170,6 +179,9 @@ def plot_states(states: list,
     # plot data on map
     bounds_3857 = bounds.to_crs(epsg=3857)  # web mercator
     gdf_3857 = gdf.to_crs(epsg=3857)  # web mercator
+
+    # Because matplotlib is not multi threaded lock
+    lock.acquire()
     f, ax = plt.subplots(figsize=figsize)
     bounds_3857.plot(ax=ax, alpha=0.0, edgecolor="k")
     gdf_3857.plot(ax=ax, alpha=0.8, edgecolor="k")
@@ -183,6 +195,10 @@ def plot_states(states: list,
         buffer.seek(0)
         img = buffer.getvalue()
     plt.close()
+
+    # Release lock
+    lock.release()
+
     return img
 
 
