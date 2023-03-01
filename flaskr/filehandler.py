@@ -1,49 +1,42 @@
-import dataclasses
 import logging
 import os
-import queue
-import time
 import datetime
-import atexit
-from dataclasses import field
 from apscheduler.schedulers.background import BackgroundScheduler
-from attr import dataclass
-from ovm.utils import convert_int_to_datetime, convert_datetime_to_int
+
+# Static directory
+static_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static')
+if not os.path.exists(static_dir):
+    os.mkdir(static_dir)
+
+# Temp directory
+temp_dir_name = 'temp'
+temp_dir = os.path.join(static_dir, temp_dir_name)
+if not os.path.exists(temp_dir):
+    os.mkdir(temp_dir)
+
+# Delete all old temporary files
+for filename in os.listdir(temp_dir):
+    f = os.path.join(temp_dir, filename)
+    logging.info('Removing old %s temp file' % filename)
+    os.remove(f)
+
+# Delete files in temp directory older than this value
+seconds_till_delete = 5 * 60
 
 
-class TempFile(object):
-    def __init__(self, filename: str, datetime: int):
-        self.filename = filename
-        self.datetime = datetime
-
-
-file_queue = queue.Queue()
-files_to_delete = []
-time_till_delete = 60
-
-def register_temp_file(filename: str):
-    file_queue.put(TempFile(filename, convert_datetime_to_int(datetime.datetime.now())))
-
-
+# Background sceduled task, deletes files older than seconds_till_delete
 def remove_temp_files():
-    logging.info("Scanning for temporary files")
-    while file_queue.empty() is False:
-        files_to_delete.append(file_queue.get())
-
-    files_deleted = []
-    for temp_file in files_to_delete:
-        if (datetime.datetime.now() - convert_int_to_datetime(temp_file.datetime)).seconds > time_till_delete:
-            logging.info('Deleting %s' % temp_file.filename)
-            try:
-                os.remove(temp_file.filename)
-            except Exception as ex:
-                logging.exception(ex.__str__())
-            files_deleted.append(temp_file)
-
-    for file_deleted in files_deleted:
-        files_to_delete.remove(file_deleted)
+    # Remove previous temp files
+    now = datetime.datetime.now()
+    for filename in os.listdir(temp_dir):
+        f = os.path.join(temp_dir, filename)
+        t = datetime.datetime.fromtimestamp(os.path.getmtime(f))
+        if (now - t).seconds > seconds_till_delete:
+            logging.info('Removing old %s temp file' % filename)
+            os.remove(f)
 
 
+# Fire up the scheduler
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=remove_temp_files, trigger="interval", seconds=60)
 scheduler.start()
