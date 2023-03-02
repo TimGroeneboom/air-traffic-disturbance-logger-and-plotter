@@ -14,7 +14,6 @@ from ovm.complainant import Complainant
 from ovm.trajectory import Trajectory
 from ovm.utils import convert_datetime_to_int
 
-
 @dataclass
 class StateIterator:
     """"

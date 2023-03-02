@@ -1,0 +1,106 @@
+openapi: 3.0.0
+
+tags:
+  - name: Find disturbances
+
+description: "Returns a list of disturbance periods with all callsigns and their timestamps.\n
+  A disturbance is registered when an equal or bigger amount than occurrences of aircrafts flying lower than
+  given altitude have been registered within given timeframe. Optionally, a plot will be returned as byte array (compressed as jpg)"
+
+get:
+  parameters:
+      - in: query
+        name: user
+        schema:
+          type: string
+          default: John Doe
+        required: true
+        description: The user name
+      - in: query
+        name: lat
+        schema:
+          type: number
+          default: 52.31
+        required: true
+        description: Latitude
+      - in: query
+        name: lon
+        schema:
+          type: number
+          default: 4.83
+        required: true
+        description: Longitude
+      - in: query
+        name: radius
+        required: true
+        description: The distance the flight needs to have to lat, lon location in meters
+        schema:
+          type: integer
+          minimum: 100
+          maximum: 3000
+          default: 1000
+      - in: query
+        name: altitude
+        required: true
+        description: The altitude of the plane in meters
+        schema:
+          type: integer
+          minimum: 100
+          maximum: 10000
+          default: 1000
+      - in: query
+        name: timeframe
+        required: true
+        description: The timeframe in minutes
+        schema:
+          type: integer
+          minimum: 10
+          maximum: 1440
+          default: 60
+      - in: query
+        name: occurrences
+        required: true
+        description: The occurrences within timeframe
+        schema:
+          type: integer
+          minimum: 1
+          default: 4
+      - in: query
+        name: begin
+        required: true
+        description: Beginning timestamp in %Y%m%d%H%M%S format
+        schema:
+          type: integer
+      - in: query
+        name: end
+        required: true
+        description: End timestamp in %Y%m%d%H%M%S format
+        schema:
+          type: integer
+      - in: query
+        name: plot
+        required: false
+        description: Plot requested, 0 is False. Values >= 1 mean plot will be created
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+          maximum: 1
+        allowEmptyValue: true
+      - in: query
+        name: zoomlevel
+        required: false
+        description: Zoomlevel op the map used in plot
+        schema:
+          type: integer
+          default: 14
+          minimum: 1
+          maximum: 14
+
+responses:
+  '200':
+    description: Successful response
+  '400':
+    description: Bad Request
+  '500':
+    description: Internal Server Error
