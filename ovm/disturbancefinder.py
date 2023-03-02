@@ -14,6 +14,7 @@ from ovm.complainant import Complainant
 from ovm.trajectory import Trajectory
 from ovm.utils import convert_datetime_to_int
 
+
 @dataclass
 class StateIterator:
     """"
@@ -109,6 +110,7 @@ class DisturbanceFinder:
         states_collection = self.mongo_client[self.environment.mongodb_config.database][
             self.environment.mongodb_config.collection]
         cursor = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': convert_datetime_to_int(begin)***REMOVED******REMOVED***)
+        callsign_dict = ***REMOVED******REMOVED***
 
         # Iterate through states
         for document in cursor:
@@ -128,6 +130,10 @@ class DisturbanceFinder:
                 # Get callsign
                 callsign = utils.remove_whitespace(state['callsign'])
 
+                # Ignore if callsign already present
+                if callsign in callsign_dict:
+                    continue
+
                 # Ignore specified callsigns
                 if utils.list_contains_value(arr=self.ignore_callsigns,
                                              value=callsign):
@@ -143,52 +149,51 @@ class DisturbanceFinder:
                 # obtain flight coordinate
                 flight_coord = (state['latitude'], state['longitude'])
 
-                # Ignore if callsign already present
-                if not utils.list_contains_value(disturbance.callsigns, callsign):
-                    # Check if altitude is lower than altitude and if distance is within specified radius
-                    if geo_altitude < altitude:
-                        # Obtain lat lon from location to compute distance from complainant origin
-                        distance = geopy.distance.distance(origin, flight_coord).meters
-                        if distance < radius:
-                            disturbance.callsigns.append(Callsign(callsign, timestamp_int))
+                # Check if altitude is lower than altitude and if distance is within specified radius
+                if geo_altitude < altitude:
+                    # Obtain lat lon from location to compute distance from complainant origin
+                    distance = geopy.distance.distance(origin, flight_coord).meters
+                    if distance < radius:
+                        callsign_dict[callsign] = True
+                        disturbance.callsigns.append(Callsign(callsign, timestamp_int))
 
-                            # obtain trajectory if plot is needed
-                            if plot:
-                                trajectories[callsign] = Trajectory()
-                                trajectories[callsign].callsign = callsign
-                                trajectories[callsign].coords.append((flight_coord[1], flight_coord[0]))
-                                trajectories[callsign].average_altitude += geo_altitude
+                        # obtain trajectory if plot is needed
+                        if plot:
+                            trajectories[callsign] = Trajectory()
+                            trajectories[callsign].callsign = callsign
+                            trajectories[callsign].coords.append((flight_coord[1], flight_coord[0]))
+                            trajectories[callsign].average_altitude += geo_altitude
 
-                                timestamp_int = document['Time']
-                                items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(4)
-                                items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
-                                    [('Time', pymongo.DESCENDING)]).limit(4)
-                                dictionary = ***REMOVED******REMOVED***
-                                for doc in items_before:
-                                    timestamp_int = doc['Time']
-                                    if timestamp_int not in dictionary.keys():
-                                        dictionary[timestamp_int] = doc['States']
-                                for doc in items_after:
-                                    timestamp_int = doc['Time']
-                                    if timestamp_int not in dictionary.keys():
-                                        dictionary[timestamp_int] = doc['States']
+                            timestamp_int = document['Time']
+                            items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(4)
+                            items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
+                                [('Time', pymongo.DESCENDING)]).limit(4)
+                            dictionary = ***REMOVED******REMOVED***
+                            for doc in items_before:
+                                timestamp_int = doc['Time']
+                                if timestamp_int not in dictionary.keys():
+                                    dictionary[timestamp_int] = doc['States']
+                            for doc in items_after:
+                                timestamp_int = doc['Time']
+                                if timestamp_int not in dictionary.keys():
+                                    dictionary[timestamp_int] = doc['States']
 
-                                ordered_dict = collections.OrderedDict(sorted(dictionary.items()))
-                                for key, value in ordered_dict.items():
-                                    for other_state in value:
-                                        if utils.remove_whitespace(other_state['callsign']) == callsign:
-                                            new_altitude = other_state['geo_altitude']
-                                            if new_altitude is not None:
-                                                # Obtain lat lon from location to compute distance from complainant origin
-                                                new_coord = (other_state['latitude'], other_state['longitude'])
-                                                distance = geopy.distance.distance(origin, new_coord)
-                                                if distance < radius * 2:
-                                                    trajectories[callsign].average_altitude += new_altitude
-                                                    trajectories[callsign].coords.append((new_coord[1], new_coord[0]))
+                            ordered_dict = collections.OrderedDict(sorted(dictionary.items()))
+                            for key, value in ordered_dict.items():
+                                for other_state in value:
+                                    if utils.remove_whitespace(other_state['callsign']) == callsign:
+                                        new_altitude = other_state['geo_altitude']
+                                        if new_altitude is not None:
+                                            # Obtain lat lon from location to compute distance from complainant origin
+                                            new_coord = (other_state['latitude'], other_state['longitude'])
+                                            distance = geopy.distance.distance(origin, new_coord)
+                                            if distance < radius * 2:
+                                                trajectories[callsign].average_altitude += new_altitude
+                                                trajectories[callsign].coords.append((new_coord[1], new_coord[0]))
 
-                                coord_num = len(trajectories[callsign].coords)
-                                if coord_num > 0:
-                                    trajectories[callsign].average_altitude /= len(trajectories[callsign].coords)
+                            coord_num = len(trajectories[callsign].coords)
+                            if coord_num > 0:
+                                trajectories[callsign].average_altitude /= len(trajectories[callsign].coords)
 
         if plot:
             # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
