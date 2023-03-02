@@ -26,15 +26,26 @@ def handle_response(response: Response):
     response_json = response.json()
     if response_json['status'] != 'OK':
         raise Exception(response_json['value'])
-    return json.loads(response_json['value'])
+    return response_json['value']
 
 
-@test_api_page.route("/api_test/find_disturbances", methods=["GET", "POST"])
+@test_api_page.route("/apitests/find_disturbances", methods=["GET", "POST"])
 def find_disturbances():
     if request.method == "POST":
         try:
             d = request.form
-            url = 'http://%s/api/find_disturbance/%s/%f/%f/%i/%i/%i/%i/%i/%i' % \
+            url = 'http://%s/api/find_disturbances?' \
+                  'user=%s&' \
+                  'lat=%f&' \
+                  'lon=%f&' \
+                  'radius=%i&' \
+                  'altitude=%i&' \
+                  'occurrences=%i&' \
+                  'timeframe=%i&' \
+                  'begin=%i&' \
+                  'end=%i&' \
+                  'plot=%i&' \
+                  'zoomlevel=%i' % \
                   (request.host,
                    d['user'],
                    float(d['lat']),
@@ -42,6 +53,8 @@ def find_disturbances():
                    int(d['radius']), int(d['altitude']),
                    int(d['occurrences']),
                    int(d['timeframe']),
+                   convert_datetime_to_int(datetime.strptime(d['begin'], '%Y-%m-%dT%H:%M')),
+                   convert_datetime_to_int(datetime.strptime(d['end'], '%Y-%m-%dT%H:%M')),
                    int('plot' in d),
                    int(d['zoomlevel']))
             disturbances = handle_response(requests.get(url))
@@ -78,16 +91,29 @@ def find_disturbances():
         except Exception as ex:
             return ex.__str__()
 
-    return render_template("api/find_disturbances.html")
+    now = datetime.now()
+    yesterday = now - timedelta(hours=24)
+    return render_template("api/find_disturbances.html",
+                           begin=yesterday.strftime('%Y-%m-%d %H:%M'),
+                           end=now.strftime('%Y-%m-%d %H:%M'))
 
 
-@test_api_page.route("/api_test/find_flights", methods=["GET", "POST"])
+@test_api_page.route("/apitests/find_flights", methods=["GET", "POST"])
 def find_flights():
     if request.method == "POST":
         try:
             d = request.form
             user = d['user']
-            url = 'http://%s/api/find_flights/%s/%f/%f/%i/%i/%i/%i/%i/%i' % \
+            url = 'http://%s/api/find_flights?' \
+                  'user=%s&' \
+                  'lat=%f&' \
+                  'lon=%f&' \
+                  'radius=%i&' \
+                  'altitude=%i&' \
+                  'begin=%i&' \
+                  'end=%i&' \
+                  'plot=%i&' \
+                  'zoomlevel=%i' % \
                   (request.host,
                    user,
                    float(d['lat']),
@@ -99,10 +125,10 @@ def find_flights():
                    int('plot' in d),
                    int(d['zoomlevel']))
 
-            disturbances = handle_response(requests.get(url))
+            flights = handle_response(requests.get(url))
 
             render_disturbances = []
-            for disturbance in disturbances['disturbances']:
+            for disturbance in flights:
                 render_disturbance = RenderDisturbance()
                 render_disturbance.file = ""
                 render_disturbance.begin = disturbance['begin']
