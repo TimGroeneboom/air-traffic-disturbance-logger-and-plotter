@@ -182,7 +182,6 @@ class DisturbanceFinder:
         Finds disturbances whitin given parameters
         Returns a Disturbances object, holding all disturbances found
         """
-
         # Get the collection of states from the mongo db
         # A state holds all plane information (callsign, location, altitude, etc..) on a specific timestamp
         # The time is the key value of a state and is ordered accordingly in the mongo database
@@ -337,9 +336,9 @@ class DisturbanceFinder:
                 for callsign, datetime_int in disturbance_period.disturbances.items():
                     # Gather states before and after this entry to plot a trajectory for callsign
                     dictionary = {}
-                    items_before = states_collection.find({'Time': {'$gte': datetime_int}}).limit(4)
+                    items_before = states_collection.find({'Time': {'$gte': datetime_int}}).limit(6)
                     items_after = states_collection.find({'Time': {'$lte': datetime_int}}).sort(
-                        [('Time', pymongo.DESCENDING)]).limit(4)
+                        [('Time', pymongo.DESCENDING)]).limit(6)
                     for doc in items_before:
                         timestamp_int = doc['Time']
                         if timestamp_int not in dictionary.keys():
