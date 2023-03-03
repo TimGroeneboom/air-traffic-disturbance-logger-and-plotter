@@ -68,13 +68,13 @@ get:
       - in: query
         name: begin
         required: true
-        description: Beginning timestamp in %Y%m%d%H%M%S format
+        description: Beginning timestamp in YYYYMMDDHHMMSS format
         schema:
           type: integer
       - in: query
         name: end
         required: true
-        description: End timestamp in %Y%m%d%H%M%S format
+        description: End timestamp in YYYYMMDDHHMMSS format
         schema:
           type: integer
       - in: query
