@@ -61,13 +61,8 @@ class PlaneLogger:
             state_object = ***REMOVED***
                 "longitude": state.longitude,
                 "latitude": state.latitude,
-                "icao24": state.icao24,
                 "callsign": state.callsign,
-                "on_ground": state.on_ground,
-                "baro_altitude": state.baro_altitude,
-                "geo_altitude": state.geo_altitude,
-                "origin_country": state.origin_country,
-                "velocity": state.velocity
+                "geo_altitude": state.geo_altitude
           ***REMOVED***
             states.append(state_object)
         result = db_states.insert_one(***REMOVED***
