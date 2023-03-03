@@ -46,6 +46,7 @@ def plot_trajectories(title: str,
     lon_min = bbox[2]
     lon_max = bbox[3]
 
+    # calc average altitude
     average_altitude = 0
     idx = 0
     linestrings = {}

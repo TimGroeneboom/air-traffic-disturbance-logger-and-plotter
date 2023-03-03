@@ -4,7 +4,6 @@ import base64
 from datetime import datetime, timedelta
 import logging
 from ovm import environment
-from ovm.complainant import Complainant
 from ovm.disturbancefinder import DisturbanceFinder
 
 if __name__ == '__main__':
@@ -26,53 +25,33 @@ if __name__ == '__main__':
     # Set log level
     logging.basicConfig(level=args.loglevel)
 
-    # TODO: fetch complainants from database
-    complainants = [Complainant(user='Jan',
-                                origin=(52.311502, 4.827680),  # Amsterdamse Bos
-                                radius=1000,
-                                altitude=1000,
-                                occurrences=4,
-                                timeframe=60),
-                    Complainant(user='Henk',
-                                origin=(52.469640, 4.721354),  # Assendelft
-                                radius=1000,
-                                altitude=1000,
-                                occurrences=4,
-                                timeframe=60),
-                    Complainant(user='Pieter',
-                                origin=(52.187571, 4.504961),  # Warmond
-                                radius=1000,
-                                altitude=1000,
-                                occurrences=4,
-                                timeframe=60),
-                    Complainant(user='Tim',
-                                origin=(52.402321, 4.916406),  # Christoffelkruidstraat
-                                radius=1000,
-                                altitude=1000,
-                                occurrences=4,
-                                timeframe=60)]
-
     # Load environment
     environment = environment.load_environment('environment.json')
 
     # Find all disturbances
+    user = 'John Doe'
     now = datetime.now()
     disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
     disturbances = disturbance_finder.find_disturbances(begin=now - timedelta(hours=24),
                                                         end=now,
-                                                        complainants=complainants,
                                                         zoomlevel=args.zoomlevel,
-                                                        plot=args.plot)
+                                                        plot=args.plot,
+                                                        title=user,
+                                                        origin=(52.311502, 4.827680),  # Amsterdamse Bos
+                                                        radius=1000,
+                                                        altitude=1000,
+                                                        occurrences=4,
+                                                        timeframe=60
+                                                        )
     elapsed = datetime.now() - now
     logging.info('Operation took %f seconds' % elapsed.seconds)
 
     # Write plots to disk
     if args.plot:
-        for user, found_disturbances in disturbances.items():
-            for disturbance in found_disturbances.disturbances:
-                with open('%s_%s.jpg' % (user, disturbance.begin), 'wb') as fh:
-                    fh.write(base64.decodebytes(bytes(disturbance.img, "utf-8")))
-                    fh.close()
+        for found_disturbance in disturbances:
+            with open('%s_%s.jpg' % (user, found_disturbance.begin), 'wb') as fh:
+                fh.write(base64.decodebytes(bytes(found_disturbance.img, "utf-8")))
+                fh.close()
 
     """
     now = datetime.now()

@@ -1,12 +1,15 @@
 import datetime
 from dataclasses import dataclass, field
-from ovm.complainant import Complainant
 
 @dataclass
 class Callsign:
     callsign: str = field(default_factory=str)
 
     datetime: int = field(default_factory=int)
+
+    altitude: int = field(default_factory=int)
+
+
 
 @dataclass
 class Disturbance:
@@ -15,7 +18,7 @@ class Disturbance:
     Holds begin & end time of found disturbance, callsigns and a plotted jpg image encoded as string
     """
 
-    callsigns: list = field(default_factory=list)
+    callsigns: dict = field(default_factory=dict)
 
     begin: str = field(default_factory=str)
 
@@ -39,7 +42,7 @@ class DisturbancePeriod:
     Trajectories dictionary and plot are optional and can be added later outside the contructor
     """
     def __init__(self,
-                 complainant: Complainant,
+                 user: str,
                  disturbances: dict,
                  begin: datetime,
                  end: datetime,
@@ -47,14 +50,14 @@ class DisturbancePeriod:
                  average_altitude: float):
         """
         Contructor
-        @param complainant: Complainant interested in the disturbance period
+        @param user: user interested in the disturbance period
         @param disturbances: dictionary holding all disturbances
         @param begin: begin datetime of disturbance period
         @param end: end datetime of disturbance period
         @param flights: amount of flights
         @param average_altitude: average altitude in meters
         """
-        self.complainant = complainant
+        self.user = user
         self.disturbances = disturbances
         self.begin = begin
         self.end = end

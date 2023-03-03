@@ -1,11 +1,12 @@
 import json
 import multiprocessing
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
+import flaskr.environment
+import requests
 from flasgger import swag_from
 from flask import Blueprint, request
 from flaskr.atomicinteger import AtomicInteger
-from ovm.complainant import Complainant
 from ovm.disturbancefinder import DisturbanceFinder
 from ovm.environment import load_environment
 from ovm.utils import convert_int_to_datetime
@@ -69,7 +70,7 @@ def execute(function, args):
         # Get data from process
         data = shared_queue.get()
 
-        # Join and close process
+        # Join process
         process.join()
 
         # Some exception occurred if exit code is not 0
@@ -93,6 +94,74 @@ def execute(function, args):
 
     # Return response object
     return response
+
+
+def sanity_check_input(begin: datetime,
+                       end: datetime,
+                       radius: int,
+                       altitude: int):
+    # Sanity check timespan
+    if end - begin > timedelta(hours=24):
+        raise Exception('Total timespan may not exceed %i hours' % 24)
+    if begin > end:
+        raise Exception('Begin cannot be later then end')
+
+    # Sanity check radius
+    if radius > 2000:
+        raise Exception('Radius may not be larger than %i meters' % 2000)
+    if radius < 100:
+        raise Exception('Radius cannot be smaller than %i meters' % 100)
+
+    # Sanity check altitude
+    if altitude < 100:
+        raise Exception('Altitude cannnot be smaller than %i meters' % altitude)
+
+
+def get_lat_lon_from_pro6pp(args):
+    if args['postalcode'] is None:
+        raise Exception('postalcode cannot be None')
+    postalcode = args['postalcode']
+
+    if args['streetnumber'] is None:
+        raise Exception('streetnumber cannot be None')
+    streetnumber = float(args['streetnumber'])
+
+    url = '%s?' \
+          'authKey=%s&' \
+          'postalCode=%s&' \
+          'streetNumberAndPremise=%i' % \
+          (flaskr.environment.PRO6PP_API_URL,
+           flaskr.environment.PRO6PP_AUTH_KEY,
+           postalcode, streetnumber)
+
+    data = requests.get(url).json()
+
+    if 'lat' not in data or 'lng' not in data:
+        err = 'Could not get latitude or longitude from pro6pp server'
+        if 'error_id' in data:
+            err += ' : ' + data['error_id']
+        raise Exception(err)
+
+    return data['lat'], data['lng']
+
+
+def find_disturbances_process_pro6pp(shared_queue, args):
+    try:
+        lat, lon = get_lat_lon_from_pro6pp(args)
+        modified_args = dict(args)
+        modified_args['lat'] = lat
+        modified_args['lon'] = lon
+        find_disturbances_process(shared_queue, modified_args)
+    except Exception as ex:
+        shared_queue.put(ex.__str__())
+        exit(1)
+
+
+@swag_from('swagger/find_disturbances_pro6pp.yml', methods=['GET'])
+@api_page.route('/api/find_disturbances_pro6pp')
+def find_disturbances_pro6pp_api():
+    return execute(function=find_disturbances_process_pro6pp,
+                   args=request.args)
 
 
 def find_disturbances_process(shared_queue, args):
@@ -141,19 +210,26 @@ def find_disturbances_process(shared_queue, args):
         if args['plot'] is not None:
             plot = bool(int(args['plot']))
 
-        complainants = [Complainant(user=user,
-                                    origin=(lat, lon),
-                                    radius=radius,
-                                    altitude=altitude,
-                                    occurrences=occurrences,
-                                    timeframe=timeframe)]
+        # Sanity check input
+        begin_dt = convert_int_to_datetime(begin)
+        end_dt = convert_int_to_datetime(end)
+        sanity_check_input(begin=begin_dt,
+                           end=end_dt,
+                           radius=radius,
+                           altitude=altitude)
 
         disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
-        disturbances = disturbance_finder.find_disturbances(begin=convert_int_to_datetime(begin),
-                                                            end=convert_int_to_datetime(end),
-                                                            complainants=complainants,
+        disturbances = disturbance_finder.find_disturbances(begin=begin_dt,
+                                                            end=end_dt,
                                                             zoomlevel=zoomlevel,
-                                                            plot=plot)
+                                                            plot=plot,
+                                                            title=user,
+                                                            origin=(lat, lon),
+                                                            radius=radius,
+                                                            altitude=altitude,
+                                                            occurrences=occurrences,
+                                                            timeframe=timeframe
+                                                            )
         shared_queue.put(disturbances)
         exit(0)
     except Exception as ex:
@@ -206,10 +282,18 @@ def find_flights_process(shared_queue, args):
         if args['plot'] is not None:
             plot = bool(int(args['plot']))
 
+        # Sanity check input
+        begin_dt = convert_int_to_datetime(begin)
+        end_dt = convert_int_to_datetime(end)
+        sanity_check_input(begin=begin_dt,
+                           end=end_dt,
+                           radius=radius,
+                           altitude=altitude)
+
         disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
         flights = disturbance_finder.find_flights(origin=(lat, lon),
-                                                  begin=convert_int_to_datetime(begin),
-                                                  end=convert_int_to_datetime(end),
+                                                  begin=begin_dt,
+                                                  end=end_dt,
                                                   radius=radius,
                                                   altitude=altitude,
                                                   title=user,
@@ -226,4 +310,23 @@ def find_flights_process(shared_queue, args):
 @api_page.route('/api/find_flights')
 def find_flights_api():
     return execute(function=find_flights_process,
+                   args=request.args)
+
+
+def find_flights_process_pro6pp(shared_queue, args):
+    try:
+        lat, lon = get_lat_lon_from_pro6pp(args)
+        modified_args = dict(args)
+        modified_args['lat'] = lat
+        modified_args['lon'] = lon
+        find_flights_process(shared_queue, modified_args)
+    except Exception as ex:
+        shared_queue.put(ex.__str__())
+        exit(1)
+
+
+@swag_from('swagger/find_flights_pro6pp.yml', methods=['GET'])
+@api_page.route('/api/find_flights_pro6pp')
+def find_flights_pro6pp_api():
+    return execute(function=find_flights_process_pro6pp,
                    args=request.args)
