@@ -26,6 +26,18 @@ swagger_config = {
             "route": '/swagger/find_flights.json',
             "rule_filter": lambda rule: True,
             "model_filter": lambda tag: True,
+        },
+        {
+            "endpoint": 'find_disturbances_pro6pp',
+            "route": '/swagger/find_disturbances_pro6pp.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        },
+        {
+            "endpoint": 'find_flights_pro6pp',
+            "route": '/swagger/find_disturbances_pro6pp.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
         }
     ],
     "static_url_path": "/flasgger_static",

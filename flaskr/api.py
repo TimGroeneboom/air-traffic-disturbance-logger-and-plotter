@@ -30,6 +30,7 @@ def execute(function, args):
     """
     All api calls get executed by this function
     Waits if max worker threads has exceeded
+    Fires up a new process if worker is available
     Returns response object in json on success
     {
         status: 'OK',
@@ -96,14 +97,42 @@ def execute(function, args):
     return response
 
 
-def sanity_check_input(begin: datetime,
-                       end: datetime,
-                       radius: int,
-                       altitude: int):
+def sanity_check_input(args):
+    """
+    Sanity checks API call input, raises exception if input is not within specs
+    TODO: define specs somewhere
+    """
+    # Sanity check input
+    if args['user'] is None:
+        raise Exception('User cannot be None')
+
+    if args['lat'] is None:
+        raise Exception('lat cannot be None')
+
+    if args['lon'] is None:
+        raise Exception('lon cannot be None')
+
+    if args['radius'] is None:
+        raise Exception('lon cannot be None')
+
+    if args['altitude'] is None:
+        raise Exception('altitude cannot be None')
+
+    if args['begin'] is None:
+        raise Exception('begin cannot be None')
+
+    if args['end'] is None:
+        raise Exception('end cannot be None')
+
+    radius = int(args['radius'])
+    altitude = int(args['altitude'])
+    begin_dt = convert_int_to_datetime(int(args['begin']))
+    end_dt = convert_int_to_datetime(int(args['end']))
+
     # Sanity check timespan
-    if end - begin > timedelta(hours=24):
+    if end_dt - begin_dt > timedelta(hours=24):
         raise Exception('Total timespan may not exceed %i hours' % 24)
-    if begin > end:
+    if begin_dt > end_dt:
         raise Exception('Begin cannot be later then end')
 
     # Sanity check radius
@@ -114,10 +143,17 @@ def sanity_check_input(begin: datetime,
 
     # Sanity check altitude
     if altitude < 100:
-        raise Exception('Altitude cannnot be smaller than %i meters' % altitude)
+        raise Exception('Altitude cannot be smaller than %i meters' % 100)
 
 
 def get_lat_lon_from_pro6pp(args):
+    """
+    Queries lat and lon from given postalcode and streetnumber
+    Uses pro6pp (https://www.pro6pp.nl/)
+    Raises exception on error
+    :param args: dict, except postalcode and streetnumber as keys
+    :return: latitude and longitude
+    """
     if args['postalcode'] is None:
         raise Exception('postalcode cannot be None')
     postalcode = args['postalcode']
@@ -146,6 +182,11 @@ def get_lat_lon_from_pro6pp(args):
 
 
 def find_disturbances_process_pro6pp(shared_queue, args):
+    """
+    Process of finding disturbances using pro6pp query, exits on error or completion
+    :param shared_queue: the shared_queue where data will be put
+    :param args: arguments
+    """
     try:
         lat, lon = get_lat_lon_from_pro6pp(args)
         modified_args = dict(args)
@@ -160,32 +201,32 @@ def find_disturbances_process_pro6pp(shared_queue, args):
 @swag_from('swagger/find_disturbances_pro6pp.yml', methods=['GET'])
 @api_page.route('/api/find_disturbances_pro6pp')
 def find_disturbances_pro6pp_api():
+    """
+    The find_disturbances_pro6pp API call
+    :return: response data
+    """
     return execute(function=find_disturbances_process_pro6pp,
                    args=request.args)
 
 
 def find_disturbances_process(shared_queue, args):
+    """
+    Process of finding disturbances, exits on error or completion
+    :param shared_queue: the shared_queue where data will be put
+    :param args: arguments
+    """
     try:
         # Sanity check input
-        if args['user'] is None:
-            raise Exception('User cannot be None')
+        sanity_check_input(args)
+
+        # Get input
         user = args['user']
-
-        if args['lat'] is None:
-            raise Exception('lat cannot be None')
         lat = float(args['lat'])
-
-        if args['lon'] is None:
-            raise Exception('lon cannot be None')
         lon = float(args['lon'])
-
-        if args['radius'] is None:
-            raise Exception('lon cannot be None')
         radius = int(args['radius'])
-
-        if args['altitude'] is None:
-            raise Exception('altitude cannot be None')
         altitude = int(args['altitude'])
+        begin = int(args['begin'])
+        end = int(args['end'])
 
         if args['occurrences'] is None:
             raise Exception('occurrences cannot be None')
@@ -195,14 +236,6 @@ def find_disturbances_process(shared_queue, args):
             raise Exception('timeframe cannot be None')
         timeframe = int(args['timeframe'])
 
-        if args['begin'] is None:
-            raise Exception('begin cannot be None')
-        begin = int(args['begin'])
-
-        if args['end'] is None:
-            raise Exception('end cannot be None')
-        end = int(args['end'])
-
         zoomlevel = 14
         if args['zoomlevel'] is not None:
             zoomlevel = int(args['zoomlevel'])
@@ -210,13 +243,8 @@ def find_disturbances_process(shared_queue, args):
         if args['plot'] is not None:
             plot = bool(int(args['plot']))
 
-        # Sanity check input
         begin_dt = convert_int_to_datetime(begin)
         end_dt = convert_int_to_datetime(end)
-        sanity_check_input(begin=begin_dt,
-                           end=end_dt,
-                           radius=radius,
-                           altitude=altitude)
 
         disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
         disturbances = disturbance_finder.find_disturbances(begin=begin_dt,
@@ -240,41 +268,34 @@ def find_disturbances_process(shared_queue, args):
 @swag_from('swagger/find_disturbances.yml', methods=['GET'])
 @api_page.route('/api/find_disturbances')
 def find_disturbances_api():
+    """
+    The find_disturbances API call
+    :return: response data
+    """
     return execute(function=find_disturbances_process,
                    args=request.args)
 
 
 def find_flights_process(shared_queue, args):
+    """
+    Process of finding flights, exits on error or completion
+    :param shared_queue: the shared_queue where data will be put
+    :param args: arguments
+    """
     try:
         # Sanity check input
-        if args['user'] is None:
-            raise Exception('User cannot be None')
+        sanity_check_input(args)
+
+        # Get input
         user = args['user']
-
-        if args['lat'] is None:
-            raise Exception('lat cannot be None')
         lat = float(args['lat'])
-
-        if args['lon'] is None:
-            raise Exception('lon cannot be None')
         lon = float(args['lon'])
-
-        if args['begin'] is None:
-            raise Exception('begin cannot be None')
+        radius = int(args['radius'])
+        altitude = int(args['altitude'])
         begin = int(args['begin'])
-
-        if args['end'] is None:
-            raise Exception('end cannot be None')
         end = int(args['end'])
 
-        if args['radius'] is None:
-            raise Exception('radius cannot be None')
-        radius = int(args['radius'])
-
-        if args['altitude'] is None:
-            raise Exception('altitude cannot be None')
-        altitude = int(args['altitude'])
-
+        # Get optional args
         zoomlevel = 14
         if args['zoomlevel'] is not None:
             zoomlevel = int(args['zoomlevel'])
@@ -282,13 +303,9 @@ def find_flights_process(shared_queue, args):
         if args['plot'] is not None:
             plot = bool(int(args['plot']))
 
-        # Sanity check input
+        # Get begin & end datetime
         begin_dt = convert_int_to_datetime(begin)
         end_dt = convert_int_to_datetime(end)
-        sanity_check_input(begin=begin_dt,
-                           end=end_dt,
-                           radius=radius,
-                           altitude=altitude)
 
         disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
         flights = disturbance_finder.find_flights(origin=(lat, lon),
@@ -309,11 +326,20 @@ def find_flights_process(shared_queue, args):
 @swag_from('swagger/find_flights.yml', methods=['GET'])
 @api_page.route('/api/find_flights')
 def find_flights_api():
+    """
+    The find_flights API call
+    :return: response data
+    """
     return execute(function=find_flights_process,
                    args=request.args)
 
 
 def find_flights_process_pro6pp(shared_queue, args):
+    """
+    Process of finding flights using pro6pp query, exits on error or completion
+    :param shared_queue: the shared_queue where data will be put
+    :param args: arguments
+    """
     try:
         lat, lon = get_lat_lon_from_pro6pp(args)
         modified_args = dict(args)
@@ -328,5 +354,9 @@ def find_flights_process_pro6pp(shared_queue, args):
 @swag_from('swagger/find_flights_pro6pp.yml', methods=['GET'])
 @api_page.route('/api/find_flights_pro6pp')
 def find_flights_pro6pp_api():
+    """
+    The find_flights_pro6pp API call
+    :return: response data
+    """
     return execute(function=find_flights_process_pro6pp,
                    args=request.args)
