@@ -97,7 +97,7 @@ class DisturbanceFinder:
                 # Check if altitude is lower than altitude and if distance is within specified radius
                 if geo_altitude < altitude:
                     # Obtain lat lon from location to compute distance from complainant origin
-                    distance = geopy.distance.distance(origin, flight_coord).meters
+                    distance = geopy.distance.great_circle(origin, flight_coord).meters
                     if distance < radius:
                         disturbance.callsigns[callsign] = Callsign(callsign=utils.remove_whitespace(callsign),
                                                                    datetime=timestamp_int,
@@ -137,7 +137,7 @@ class DisturbanceFinder:
                                         if new_altitude is not None:
                                             # Obtain lat lon from location to compute distance from complainant origin
                                             new_coord = (other_state['latitude'], other_state['longitude'])
-                                            distance = geopy.distance.distance(origin, new_coord)
+                                            distance = geopy.distance.great_circle(origin, new_coord)
                                             if distance < radius * 2:
                                                 trajectories[callsign].average_altitude += new_altitude
                                                 trajectories[callsign].coords.append((new_coord[1], new_coord[0]))
@@ -254,7 +254,7 @@ class DisturbanceFinder:
                 if geo_altitude < altitude:
                     # Obtain lat lon from location to compute distance from complainant origin
                     coord = (state['latitude'], state['longitude'])
-                    distance = geopy.distance.distance(origin, coord).meters
+                    distance = geopy.distance.great_circle(origin, coord).meters
 
                     if distance < radius:
                         # A disturbance is detected, check if it is a new plane in this disturbance period
