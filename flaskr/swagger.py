@@ -27,6 +27,18 @@ swagger_config = ***REMOVED***
             "rule_filter": lambda rule: True,
             "model_filter": lambda tag: True,
       ***REMOVED***
+        ***REMOVED***
+            "endpoint": 'find_disturbances_pro6pp',
+            "route": '/swagger/find_disturbances_pro6pp.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+      ***REMOVED***
+        ***REMOVED***
+            "endpoint": 'find_flights_pro6pp',
+            "route": '/swagger/find_disturbances_pro6pp.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+      ***REMOVED***
     ],
     "static_url_path": "/flasgger_static",
     "swagger_ui": True,
