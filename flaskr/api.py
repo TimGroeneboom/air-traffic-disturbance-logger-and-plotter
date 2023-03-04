@@ -47,7 +47,7 @@ def execute(function, args):
     """
 
     # Wait 100 millis for worker to finish
-    while worker_count.value >= max_workers:
+    while worker_count.value >= flaskr.environment.MAX_WORKERS:
         sleep(0.1)
 
     # Increment worker count
@@ -97,32 +97,46 @@ def execute(function, args):
     return response
 
 
-def sanity_check_input(args):
+def process_input(args, extra_args: list = []):
     """
     Sanity checks API call input, raises exception if input is not within specs
     TODO: define specs somewhere
     """
+    args_mutable_dict = dict(args)
+
     # Sanity check input
-    if args['user'] is None:
-        raise Exception('User cannot be None')
+    if check_key_and_key_value(args, 'postalcode') is False or check_key_and_key_value(args, 'streetnumber') is False:
+        if check_key_and_key_value(args, 'lat') is False:
+            raise Exception('lat cannot be None if no postalcode and/or streetnumber is given')
 
-    if args['lat'] is None:
-        raise Exception('lat cannot be None')
+        if check_key_and_key_value(args, 'lon') is False:
+            raise Exception('lon cannot be None if no postalcode  and/or postal code is given')
+    elif check_key_and_key_value(args, 'lat') is False or check_key_and_key_value(args, 'lon') is False:
+        if check_key_and_key_value(args, 'postalcode') is False:
+            raise Exception('postalcode cannot be None if no lat, lon is given')
 
-    if args['lon'] is None:
-        raise Exception('lon cannot be None')
+        if check_key_and_key_value(args, 'streetnumber') is False:
+            raise Exception('streetnumber cannot be None if no lat, lon is given')
 
-    if args['radius'] is None:
-        raise Exception('lon cannot be None')
+        data = get_lat_lon_from_pro6pp(args)
+        args_mutable_dict['lat'] = data[0]
+        args_mutable_dict['lon'] = data[1]
 
-    if args['altitude'] is None:
+    if check_key_and_key_value(args, 'radius') is False:
+        raise Exception('radius cannot be None')
+
+    if check_key_and_key_value(args, 'altitude') is False:
         raise Exception('altitude cannot be None')
 
-    if args['begin'] is None:
+    if check_key_and_key_value(args, 'begin') is False:
         raise Exception('begin cannot be None')
 
-    if args['end'] is None:
+    if check_key_and_key_value(args, 'end') is False:
         raise Exception('end cannot be None')
+
+    for extra_arg in extra_args:
+        if check_key_and_key_value(args, extra_arg) is False:
+            raise Exception('Expected %s argument but key is not present' % extra_arg)
 
     radius = int(args['radius'])
     altitude = int(args['altitude'])
@@ -145,6 +159,8 @@ def sanity_check_input(args):
     if altitude < 100:
         raise Exception('Altitude cannot be smaller than %i meters' % 100)
 
+    return args_mutable_dict
+
 
 def get_lat_lon_from_pro6pp(args):
     """
@@ -154,12 +170,7 @@ def get_lat_lon_from_pro6pp(args):
     :param args: dict, except postalcode and streetnumber as keys
     :return: latitude and longitude
     """
-    if args['postalcode'] is None:
-        raise Exception('postalcode cannot be None')
     postalcode = args['postalcode']
-
-    if args['streetnumber'] is None:
-        raise Exception('streetnumber cannot be None')
     streetnumber = float(args['streetnumber'])
 
     url = '%s?' \
@@ -181,34 +192,6 @@ def get_lat_lon_from_pro6pp(args):
     return data['lat'], data['lng']
 
 
-def find_disturbances_process_pro6pp(shared_queue, args):
-    """
-    Process of finding disturbances using pro6pp query, exits on error or completion
-    :param shared_queue: the shared_queue where data will be put
-    :param args: arguments
-    """
-    try:
-        lat, lon = get_lat_lon_from_pro6pp(args)
-        modified_args = dict(args)
-        modified_args['lat'] = lat
-        modified_args['lon'] = lon
-        find_disturbances_process(shared_queue, modified_args)
-    except Exception as ex:
-        shared_queue.put(ex.__str__())
-        exit(1)
-
-
-@swag_from('swagger/find_disturbances_pro6pp.yml', methods=['GET'])
-@api_page.route('/api/find_disturbances_pro6pp')
-def find_disturbances_pro6pp_api():
-    """
-    The find_disturbances_pro6pp API call
-    :return: response data
-    """
-    return execute(function=find_disturbances_process_pro6pp,
-                   args=request.args)
-
-
 def find_disturbances_process(shared_queue, args):
     """
     Process of finding disturbances, exits on error or completion
@@ -217,31 +200,25 @@ def find_disturbances_process(shared_queue, args):
     """
     try:
         # Sanity check input
-        sanity_check_input(args)
+        modified_args = process_input(args, extra_args=['occurrences', 'timeframe'])
 
         # Get input
-        user = args['user']
-        lat = float(args['lat'])
-        lon = float(args['lon'])
-        radius = int(args['radius'])
-        altitude = int(args['altitude'])
-        begin = int(args['begin'])
-        end = int(args['end'])
-
-        if args['occurrences'] is None:
-            raise Exception('occurrences cannot be None')
-        occurrences = int(args['occurrences'])
-
-        if args['timeframe'] is None:
-            raise Exception('timeframe cannot be None')
-        timeframe = int(args['timeframe'])
+        user = modified_args['user']
+        lat = float(modified_args['lat'])
+        lon = float(modified_args['lon'])
+        radius = int(modified_args['radius'])
+        altitude = int(modified_args['altitude'])
+        begin = int(modified_args['begin'])
+        end = int(modified_args['end'])
+        occurrences = int(modified_args['occurrences'])
+        timeframe = int(modified_args['timeframe'])
 
         zoomlevel = 14
-        if args['zoomlevel'] is not None:
-            zoomlevel = int(args['zoomlevel'])
+        if modified_args['zoomlevel'] is not None:
+            zoomlevel = int(modified_args['zoomlevel'])
         plot = False
         if args['plot'] is not None:
-            plot = bool(int(args['plot']))
+            plot = bool(int(modified_args['plot']))
 
         begin_dt = convert_int_to_datetime(begin)
         end_dt = convert_int_to_datetime(end)
@@ -284,24 +261,24 @@ def find_flights_process(shared_queue, args):
     """
     try:
         # Sanity check input
-        sanity_check_input(args)
+        modified_args = process_input(args)
 
         # Get input
-        user = args['user']
-        lat = float(args['lat'])
-        lon = float(args['lon'])
-        radius = int(args['radius'])
-        altitude = int(args['altitude'])
-        begin = int(args['begin'])
-        end = int(args['end'])
+        user = modified_args['user']
+        lat = float(modified_args['lat'])
+        lon = float(modified_args['lon'])
+        radius = int(modified_args['radius'])
+        altitude = int(modified_args['altitude'])
+        begin = int(modified_args['begin'])
+        end = int(modified_args['end'])
 
         # Get optional args
         zoomlevel = 14
-        if args['zoomlevel'] is not None:
-            zoomlevel = int(args['zoomlevel'])
+        if modified_args['zoomlevel'] is not None:
+            zoomlevel = int(modified_args['zoomlevel'])
         plot = False
         if args['plot'] is not None:
-            plot = bool(int(args['plot']))
+            plot = bool(int(modified_args['plot']))
 
         # Get begin & end datetime
         begin_dt = convert_int_to_datetime(begin)
@@ -334,29 +311,9 @@ def find_flights_api():
                    args=request.args)
 
 
-def find_flights_process_pro6pp(shared_queue, args):
-    """
-    Process of finding flights using pro6pp query, exits on error or completion
-    :param shared_queue: the shared_queue where data will be put
-    :param args: arguments
-    """
-    try:
-        lat, lon = get_lat_lon_from_pro6pp(args)
-        modified_args = dict(args)
-        modified_args['lat'] = lat
-        modified_args['lon'] = lon
-        find_flights_process(shared_queue, modified_args)
-    except Exception as ex:
-        shared_queue.put(ex.__str__())
-        exit(1)
+def check_key_and_key_value(args, key):
+    if key in args:
+        if args[key] is not None:
+            return True
 
-
-@swag_from('swagger/find_flights_pro6pp.yml', methods=['GET'])
-@api_page.route('/api/find_flights_pro6pp')
-def find_flights_pro6pp_api():
-    """
-    The find_flights_pro6pp API call
-    :return: response data
-    """
-    return execute(function=find_flights_process_pro6pp,
-                   args=request.args)
+    return False
