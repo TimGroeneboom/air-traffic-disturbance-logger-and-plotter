@@ -21,15 +21,27 @@ get:
         schema:
           type: number
           default: 52.31
-        required: true
+        required: false
         description: Latitude
       - in: query
         name: lon
         schema:
           type: number
           default: 4.83
-        required: true
+        required: false
         description: Longitude
+      - in: query
+        name: postalcode
+        schema:
+         type: string
+        required: false
+        description: postalcode, overrides lat-lon
+      - in: query
+        name: streetnumber
+        schema:
+          type: integer
+        required: false
+        description: streetnumber, together with postalcode, overrides lat-lon
       - in: query
         name: radius
         required: true
