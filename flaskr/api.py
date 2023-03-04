@@ -118,6 +118,8 @@ def process_input(args, extra_args: list = []):
         if check_key_and_key_value(args, 'streetnumber') is False:
             raise Exception('streetnumber cannot be None if no lat, lon is given')
 
+    # postalcode and streetnumber override lat-lon
+    if check_key_and_key_value(args, 'postalcode') and check_key_and_key_value(args, 'streetnumber'):
         data = get_lat_lon_from_pro6pp(args)
         args_mutable_dict['lat'] = data[0]
         args_mutable_dict['lon'] = data[1]
