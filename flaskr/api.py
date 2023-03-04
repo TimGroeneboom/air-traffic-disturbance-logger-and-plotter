@@ -105,7 +105,7 @@ def process_input(args, extra_args: list = []):
     args_mutable_dict = dict(args)
 
     # Sanity check input
-    if check_key_and_key_value(args, 'postalcode') is False or check_key_and_key_value(args, 'streetnumber') is False:
+    if check_key_and_key_value(args, 'postalcode') is False:
         if check_key_and_key_value(args, 'lat') is False:
             raise Exception('lat cannot be None if no postalcode and/or streetnumber is given')
 
@@ -115,11 +115,8 @@ def process_input(args, extra_args: list = []):
         if check_key_and_key_value(args, 'postalcode') is False:
             raise Exception('postalcode cannot be None if no lat, lon is given')
 
-        if check_key_and_key_value(args, 'streetnumber') is False:
-            raise Exception('streetnumber cannot be None if no lat, lon is given')
-
     # postalcode and streetnumber override lat-lon
-    if check_key_and_key_value(args, 'postalcode') and check_key_and_key_value(args, 'streetnumber'):
+    if check_key_and_key_value(args, 'postalcode'):
         data = get_lat_lon_from_pro6pp(args)
         args_mutable_dict['lat'] = data[0]
         args_mutable_dict['lon'] = data[1]
@@ -173,25 +170,48 @@ def get_lat_lon_from_pro6pp(args):
     :return: latitude and longitude
     """
     postalcode = args['postalcode']
-    streetnumber = float(args['streetnumber'])
+    postalcode = postalcode.lstrip().rstrip()
+    if len(postalcode) == 6 and check_key_and_key_value(args, 'streetnumber'):
+        streetnumber = float(args['streetnumber'])
 
-    url = '%s?' \
-          'authKey=%s&' \
-          'postalCode=%s&' \
-          'streetNumberAndPremise=%i' % \
-          (flaskr.environment.PRO6PP_API_URL,
-           flaskr.environment.PRO6PP_AUTH_KEY,
-           postalcode, streetnumber)
+        url = '%s?' \
+              'authKey=%s&' \
+              'postalCode=%s&' \
+              'streetNumberAndPremise=%i' % \
+              (flaskr.environment.PRO6PP_API_AUTO_COMPLETE_URL,
+               flaskr.environment.PRO6PP_AUTH_KEY,
+               postalcode, streetnumber)
 
-    data = requests.get(url).json()
+        data = requests.get(url).json()
 
-    if 'lat' not in data or 'lng' not in data:
-        err = 'Could not get latitude or longitude from pro6pp server'
-        if 'error_id' in data:
-            err += ' : ' + data['error_id']
-        raise Exception(err)
+        if 'lat' not in data or 'lng' not in data:
+            err = 'Could not get latitude or longitude from pro6pp server'
+            if 'error_id' in data:
+                err += ' : ' + data['error_id']
+            raise Exception(err)
 
-    return data['lat'], data['lng']
+        return data['lat'], data['lng']
+    elif len(postalcode) == 4:
+        url = '%s?' \
+              'authKey=%s&' \
+              'targetPostalCodes=%s&' \
+              'postalCode=%s'% \
+              (flaskr.environment.PRO6PP_API_AUTO_LOCATOR_URL,
+               flaskr.environment.PRO6PP_AUTH_KEY,
+               postalcode, postalcode)
+
+        data = requests.get(url).json()[0]
+
+        if 'lat' not in data or 'lng' not in data:
+            err = 'Could not get latitude or longitude from pro6pp server'
+            if 'error_id' in data:
+                err += ' : ' + data['error_id']
+            raise Exception(err)
+
+        return data['lat'], data['lng']
+
+    raise Exception('No valid data supplied to get lat, lon from postalcode')
+
 
 
 def find_disturbances_process(shared_queue, args):
