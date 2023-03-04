@@ -26,6 +26,28 @@ max_workers: int = 8
 worker_count: AtomicInteger = AtomicInteger(0)
 
 
+@swag_from('swagger/find_disturbances.yml', methods=['GET'])
+@api_page.route('/api/find_disturbances')
+def find_disturbances_api():
+    """
+    The find_disturbances API call
+    :return: response data
+    """
+    return execute(function=find_disturbances_process,
+                   args=request.args)
+
+
+@swag_from('swagger/find_flights.yml', methods=['GET'])
+@api_page.route('/api/find_flights')
+def find_flights_api():
+    """
+    The find_flights API call
+    :return: response data
+    """
+    return execute(function=find_flights_process,
+                   args=request.args)
+
+
 def execute(function, args):
     """
     All api calls get executed by this function
@@ -97,133 +119,6 @@ def execute(function, args):
     return response
 
 
-def process_input(args, extra_args: list = []):
-    """
-    Sanity checks API call input, raises exception if input is not within specs
-    TODO: define specs somewhere
-    """
-    args_mutable_dict = dict(args)
-
-    # Sanity check input
-    if check_key_and_key_value(args, 'postalcode') is False:
-        if check_key_and_key_value(args, 'lat') is False:
-            raise Exception('lat cannot be None if no postalcode and/or streetnumber is given')
-
-        if check_key_and_key_value(args, 'lon') is False:
-            raise Exception('lon cannot be None if no postalcode  and/or postal code is given')
-    elif check_key_and_key_value(args, 'lat') is False or check_key_and_key_value(args, 'lon') is False:
-        if check_key_and_key_value(args, 'postalcode') is False:
-            raise Exception('postalcode cannot be None if no lat, lon is given')
-
-    # postalcode and streetnumber override lat-lon
-    if check_key_and_key_value(args, 'postalcode'):
-        data = get_lat_lon_from_pro6pp(args)
-        args_mutable_dict['lat'] = data[0]
-        args_mutable_dict['lon'] = data[1]
-
-    if check_key_and_key_value(args, 'radius') is False:
-        raise Exception('radius cannot be None')
-
-    if check_key_and_key_value(args, 'altitude') is False:
-        raise Exception('altitude cannot be None')
-
-    if check_key_and_key_value(args, 'begin') is False:
-        raise Exception('begin cannot be None')
-
-    if check_key_and_key_value(args, 'end') is False:
-        raise Exception('end cannot be None')
-
-    for extra_arg in extra_args:
-        if check_key_and_key_value(args, extra_arg) is False:
-            raise Exception('Expected %s argument but key is not present' % extra_arg)
-
-    radius = int(args['radius'])
-    altitude = int(args['altitude'])
-    begin_dt = convert_int_to_datetime(int(args['begin']))
-    end_dt = convert_int_to_datetime(int(args['end']))
-
-    # Sanity check timespan
-    if end_dt - begin_dt > timedelta(hours=24):
-        raise Exception('Total timespan may not exceed %i hours' % 24)
-    if begin_dt > end_dt:
-        raise Exception('Begin cannot be later then end')
-
-    # Sanity check radius
-    if radius > 2000:
-        raise Exception('Radius may not be larger than %i meters' % 2000)
-    if radius < 100:
-        raise Exception('Radius cannot be smaller than %i meters' % 100)
-
-    # Sanity check altitude
-    if altitude < 100:
-        raise Exception('Altitude cannot be smaller than %i meters' % 100)
-
-    return args_mutable_dict
-
-
-def get_lat_lon_from_pro6pp(args):
-    """
-    Queries lat and lon from given postalcode and streetnumber
-    Uses pro6pp (https://www.pro6pp.nl/)
-    Raises exception on error
-    :param args: dict, except postalcode and streetnumber as keys
-    :return: latitude and longitude
-    """
-    postalcode = args['postalcode']
-    postalcode = postalcode.lstrip().rstrip()
-    if len(postalcode) == 6 and check_key_and_key_value(args, 'streetnumber'):
-        streetnumber = float(args['streetnumber'])
-
-        url = '%s?' \
-              'authKey=%s&' \
-              'postalCode=%s&' \
-              'streetNumberAndPremise=%i' % \
-              (flaskr.environment.PRO6PP_API_AUTO_COMPLETE_URL,
-               flaskr.environment.PRO6PP_AUTH_KEY,
-               postalcode, streetnumber)
-
-        data = requests.get(url).json()
-
-        if 'lat' not in data or 'lng' not in data:
-            err = 'Could not get latitude or longitude from pro6pp server'
-            if 'error_id' in data:
-                err += ' : ' + data['error_id']
-            raise Exception(err)
-
-        return data['lat'], data['lng']
-    elif len(postalcode) == 4:
-        url = '%s?' \
-              'authKey=%s&' \
-              'targetPostalCodes=%s&' \
-              'postalCode=%s'% \
-              (flaskr.environment.PRO6PP_API_AUTO_LOCATOR_URL,
-               flaskr.environment.PRO6PP_AUTH_KEY,
-               postalcode, postalcode)
-
-        response = requests.get(url).json()
-
-        if isinstance(response, list):
-            if len(response) >= 1:
-                data = response[0]
-                if 'lat' not in data or 'lng' not in data:
-                    err = 'Could not get latitude or longitude from pro6pp server'
-                    if 'error_id' in data:
-                        err += ' : ' + data['error_id']
-                    raise Exception(err)
-
-                return data['lat'], data['lng']
-            else:
-                raise Exception('Returned list is empty')
-        else:
-            err = 'Invalid response from pro6pp'
-            if 'error_id' in response:
-                err += ' : ' + response['error_id']
-            raise Exception(err)
-
-    raise Exception('No valid data supplied to get lat, lon from postalcode')
-
-
-
 def find_disturbances_process(shared_queue, args):
     """
     Process of finding disturbances, exits on error or completion
@@ -274,17 +169,6 @@ def find_disturbances_process(shared_queue, args):
         exit(1)
 
 
-@swag_from('swagger/find_disturbances.yml', methods=['GET'])
-@api_page.route('/api/find_disturbances')
-def find_disturbances_api():
-    """
-    The find_disturbances API call
-    :return: response data
-    """
-    return execute(function=find_disturbances_process,
-                   args=request.args)
-
-
 def find_flights_process(shared_queue, args):
     """
     Process of finding flights, exits on error or completion
@@ -332,18 +216,142 @@ def find_flights_process(shared_queue, args):
         exit(1)
 
 
-@swag_from('swagger/find_flights.yml', methods=['GET'])
-@api_page.route('/api/find_flights')
-def find_flights_api():
+def get_lat_lon_from_pro6pp(args):
     """
-    The find_flights API call
-    :return: response data
+    Queries lat and lon from given postalcode and streetnumber
+    Uses pro6pp (https://www.pro6pp.nl/)
+    Raises exception on error
+    :param args: dict, except postalcode and streetnumber as keys
+    :return: latitude and longitude
     """
-    return execute(function=find_flights_process,
-                   args=request.args)
+    postalcode = args['postalcode']
+    postalcode = postalcode.lstrip().rstrip()
+    if len(postalcode) == 6 and check_key_and_value(args, 'streetnumber'):
+        streetnumber = float(args['streetnumber'])
+
+        url = '%s?' \
+              'authKey=%s&' \
+              'postalCode=%s&' \
+              'streetNumberAndPremise=%i' % \
+              (flaskr.environment.PRO6PP_API_AUTO_COMPLETE_URL,
+               flaskr.environment.PRO6PP_AUTH_KEY,
+               postalcode, streetnumber)
+
+        data = requests.get(url).json()
+
+        if 'lat' not in data or 'lng' not in data:
+            err = 'Could not get latitude or longitude from pro6pp server'
+            if 'error_id' in data:
+                err += ' : ' + data['error_id']
+            raise Exception(err)
+
+        return data['lat'], data['lng']
+    elif len(postalcode) == 4 or len(postalcode) == 6:
+        postalcode = postalcode[0:4]
+        url = '%s?' \
+              'authKey=%s&' \
+              'targetPostalCodes=%s&' \
+              'postalCode=%s'% \
+              (flaskr.environment.PRO6PP_API_AUTO_LOCATOR_URL,
+               flaskr.environment.PRO6PP_AUTH_KEY,
+               postalcode, postalcode)
+
+        response = requests.get(url).json()
+
+        if isinstance(response, list):
+            if len(response) >= 1:
+                data = response[0]
+                if 'lat' not in data or 'lng' not in data:
+                    err = 'Could not get latitude or longitude from pro6pp server'
+                    if 'error_id' in data:
+                        err += ' : ' + data['error_id']
+                    raise Exception(err)
+
+                return data['lat'], data['lng']
+            else:
+                raise Exception('Returned list is empty')
+        else:
+            err = 'Invalid response from pro6pp'
+            if 'error_id' in response:
+                err += ' : ' + response['error_id']
+            raise Exception(err)
+
+    raise Exception('No valid data supplied to get lat, lon from postalcode')
 
 
-def check_key_and_key_value(args, key):
+def process_input(args, extra_args: list = []):
+    """
+    Sanity checks API call input, raises exception if input is not within specs
+    Gets lat, lon from pro6pp if postalcode is given
+    TODO: define specs somewhere
+    """
+    args_mutable_dict = dict(args)
+
+    # Sanity check input
+    if check_key_and_value(args, 'postalcode') is False:
+        if check_key_and_value(args, 'lat') is False:
+            raise Exception('lat cannot be None if no postalcode and/or streetnumber is given')
+
+        if check_key_and_value(args, 'lon') is False:
+            raise Exception('lon cannot be None if no postalcode  and/or postal code is given')
+    elif check_key_and_value(args, 'lat') is False or check_key_and_value(args, 'lon') is False:
+        if check_key_and_value(args, 'postalcode') is False:
+            raise Exception('postalcode cannot be None if no lat, lon is given')
+
+    # postalcode and streetnumber override lat-lon
+    if check_key_and_value(args, 'postalcode'):
+        data = get_lat_lon_from_pro6pp(args)
+        args_mutable_dict['lat'] = data[0]
+        args_mutable_dict['lon'] = data[1]
+
+    if check_key_and_value(args, 'radius') is False:
+        raise Exception('radius cannot be None')
+
+    if check_key_and_value(args, 'altitude') is False:
+        raise Exception('altitude cannot be None')
+
+    if check_key_and_value(args, 'begin') is False:
+        raise Exception('begin cannot be None')
+
+    if check_key_and_value(args, 'end') is False:
+        raise Exception('end cannot be None')
+
+    for extra_arg in extra_args:
+        if check_key_and_value(args, extra_arg) is False:
+            raise Exception('Expected %s argument but key is not present' % extra_arg)
+
+    radius = int(args['radius'])
+    altitude = int(args['altitude'])
+    begin_dt = convert_int_to_datetime(int(args['begin']))
+    end_dt = convert_int_to_datetime(int(args['end']))
+
+    # Sanity check timespan
+    if end_dt - begin_dt > timedelta(hours=24):
+        raise Exception('Total timespan may not exceed %i hours' % 24)
+    if begin_dt > end_dt:
+        raise Exception('Begin cannot be later then end')
+
+    # Sanity check radius
+    if radius > 2000:
+        raise Exception('Radius may not be larger than %i meters' % 2000)
+    if radius < 100:
+        raise Exception('Radius cannot be smaller than %i meters' % 100)
+
+    # Sanity check altitude
+    if altitude < 100:
+        raise Exception('Altitude cannot be smaller than %i meters' % 100)
+
+    return args_mutable_dict
+
+
+def check_key_and_value(args, key):
+    """
+    Checks if key is present in dict and if key is not None
+    returns True on success
+    :param args: the dict
+    :param key: the key
+    :return: True on success
+    """
     if key in args:
         if args[key] is not None:
             return True
