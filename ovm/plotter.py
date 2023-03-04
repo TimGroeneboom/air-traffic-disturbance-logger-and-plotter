@@ -56,7 +56,8 @@ def plot_trajectories(title: str,
             linestrings[key] = linestring
             average_altitude += value.average_altitude
             idx += 1
-    average_altitude /= idx
+    if idx > 0:
+        average_altitude /= idx
 
     data = []
     for key, value in linestrings.items():

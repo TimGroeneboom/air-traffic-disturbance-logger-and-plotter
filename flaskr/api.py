@@ -200,15 +200,25 @@ def get_lat_lon_from_pro6pp(args):
                flaskr.environment.PRO6PP_AUTH_KEY,
                postalcode, postalcode)
 
-        data = requests.get(url).json()[0]
+        response = requests.get(url).json()
 
-        if 'lat' not in data or 'lng' not in data:
-            err = 'Could not get latitude or longitude from pro6pp server'
-            if 'error_id' in data:
-                err += ' : ' + data['error_id']
+        if isinstance(response, list):
+            if len(response) >= 1:
+                data = response[0]
+                if 'lat' not in data or 'lng' not in data:
+                    err = 'Could not get latitude or longitude from pro6pp server'
+                    if 'error_id' in data:
+                        err += ' : ' + data['error_id']
+                    raise Exception(err)
+
+                return data['lat'], data['lng']
+            else:
+                raise Exception('Returned list is empty')
+        else:
+            err = 'Invalid response from pro6pp'
+            if 'error_id' in response:
+                err += ' : ' + response['error_id']
             raise Exception(err)
-
-        return data['lat'], data['lng']
 
     raise Exception('No valid data supplied to get lat, lon from postalcode')
 
