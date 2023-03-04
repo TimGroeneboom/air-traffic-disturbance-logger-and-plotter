@@ -163,14 +163,16 @@ def find_flights():
 
 
 def get_lat_lon_or_postal_streetnumber(args):
-    if args['postalcode'] is None or args['postalcode'] == '' or\
-            args['streetnumber'] is None or args['streetnumber'] == '':
+    if args['postalcode'] is None or args['postalcode'] == '':
         if args['lat'] is None:
-            raise Exception('lat cannot be None if no postalcode and/or streetnumber is given')
+            raise Exception('lat cannot be None if no postalcode and is given')
 
         if args['lon'] is None:
-            raise Exception('lon cannot be None if no postalcode  and/or postal code is given')
+            raise Exception('lon cannot be None if no postalcode  and is given')
 
         return 'lat=%f&lon=%f' % (float(args['lat']), float(args['lon']))
     else:
-        return 'postalcode=%s&streetnumber=%i' % (args['postalcode'], int(args['streetnumber']))
+        data = 'postalcode=%s' % args['postalcode']
+        if len(args['streetnumber']) > 0:
+            data += '&streetnumber=%i' % int(args['streetnumber'])
+        return data
