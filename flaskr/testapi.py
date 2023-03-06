@@ -115,7 +115,7 @@ def find_flights():
                 render_disturbance.begin = disturbance['begin']
                 render_disturbance.end = disturbance['end']
                 render_disturbance.callsigns = []
-                for key, value in disturbance['callsigns'].items():
+                for value in disturbance['callsigns']:
                     render_disturbance.callsigns.append('%s : %s ' % (value['callsign'],
                                                                       convert_int_to_datetime(
                                                                       value['datetime']).__str__()))
