@@ -13,21 +13,6 @@ from ovm.utils import convert_datetime_to_int, convert_int_to_datetime
 test_api_page = Blueprint('testapi', __name__, template_folder='templates')
 
 
-class RenderDisturbance:
-    file: str = field(default_factory=str)
-    begin: str = field(default_factory=str)
-    end: str = field(default_factory=str)
-    callsigns: list = field(default_factory=list)
-    plot: bool = field(default_factory=bool)
-
-
-def handle_response(response: Response):
-    response_json = response.json()
-    if response_json['status'] != 'OK':
-        raise Exception(response_json['value'])
-    return response_json['value']
-
-
 @test_api_page.route("/apitests/find_disturbances", methods=["GET", "POST"])
 def find_disturbances():
     if request.method == "POST":
@@ -175,3 +160,18 @@ def get_lat_lon_or_postal_streetnumber(args):
         if len(args['streetnumber']) > 0:
             data += '&streetnumber=%s' % str(args['streetnumber'])
         return data
+
+
+class RenderDisturbance:
+    file: str = field(default_factory=str)
+    begin: str = field(default_factory=str)
+    end: str = field(default_factory=str)
+    callsigns: list = field(default_factory=list)
+    plot: bool = field(default_factory=bool)
+
+
+def handle_response(response: Response):
+    response_json = response.json()
+    if response_json['status'] != 'OK':
+        raise Exception(response_json['value'])
+    return response_json['value']

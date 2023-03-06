@@ -50,7 +50,7 @@ get:
           type: integer
           minimum: 100
           maximum: 3000
-          default: 1000
+          default: 2000
       - in: query
         name: altitude
         required: true
