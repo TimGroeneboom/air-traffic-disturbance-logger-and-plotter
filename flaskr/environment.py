@@ -9,3 +9,16 @@ MAX_SIZE_JOB_QUEUE = 1000
 
 # lat lon address cache
 LATLON_CACHE_EXPIRATION_DAYS = 180
+
+# old records retention in days
+STATES_RETENTION_DAYS = 31
+
+# log interval
+LOG_INTERVAL_SECONDS = 22
+
+# planelogger bbox
+PLANELOGGER_ENABLE = True
+PLANELOGGER_BBOX = (49.44, 54.16, 2.82, 7.02)
+
+# deploy test API
+DEPLOY_TEST_API = True
