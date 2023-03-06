@@ -10,6 +10,8 @@ from flaskr.api import api_page
 from flasgger import Swagger, LazyJSONEncoder
 from flaskr import environment
 
+# Set log level
+logging.basicConfig(level=environment.LOGLEVEL)
 
 # Create app
 app = Flask(__name__)
@@ -29,9 +31,6 @@ swagger = Swagger(app,
 
 # Run
 if __name__ == '__main__':
-    # Set log level
-    logging.basicConfig(level=environment.LOGLEVEL)
-
     # Setup scheduler
     scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
