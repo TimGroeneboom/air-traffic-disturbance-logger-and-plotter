@@ -37,11 +37,10 @@ class LatLonCache:
         """
         if self.collection.count_documents(***REMOVED***'address': ***REMOVED***"$in": [address]***REMOVED******REMOVED***) > 0:
             entry = self.collection.find_one(***REMOVED***'address': address***REMOVED***)
-            timestamp: datetime = convert_int_to_datetime(entry['timestamp'])
-            if datetime.datetime.now() - timestamp > datetime.timedelta(days=self.expire_days):
-                return False
-
-            if 'lat' in entry and 'lon' in entry:
+            if 'lat' in entry and 'lon' in entry and 'timetamp' in entry:
+                timestamp: datetime = convert_int_to_datetime(entry['timestamp'])
+                if datetime.datetime.now() - timestamp > datetime.timedelta(days=self.expire_days):
+                    return False
                 return True
         return False
 
@@ -62,7 +61,7 @@ class LatLonCache:
 
     def get_latlon_from_address(self, address: str):
         """
-        Gets latlon from address, can throw an exception, use after address_valid
+        Gets latlon from address, can raise an exception, use after address_valid
         :param address: the address
         :return: lat, lon tuple
         """

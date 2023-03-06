@@ -1,6 +1,7 @@
 import base64
 import collections
 import logging
+import operator
 from dataclasses import dataclass, field
 from datetime import datetime
 import geopy.distance
@@ -78,10 +79,15 @@ class DisturbanceFinder:
             # Iterate through states
             for state in states:
                 # Get callsign
-                callsign = state['callsign']
+                callsign = utils.remove_whitespace(state['callsign'])
 
                 # Ignore if callsign already present
-                if callsign in disturbance.callsigns:
+                callsign_already_registered = False
+                for existing_callsign in disturbance.callsigns:
+                    if existing_callsign.callsign == callsign:
+                        callsign_already_registered = True
+                        continue
+                if callsign_already_registered:
                     continue
 
                 # Obtain altitude
@@ -99,9 +105,9 @@ class DisturbanceFinder:
                     # Obtain lat lon from location to compute distance from complainant origin
                     distance = geopy.distance.great_circle(origin, flight_coord).meters
                     if distance < radius:
-                        disturbance.callsigns[callsign] = Callsign(callsign=utils.remove_whitespace(callsign),
-                                                                   datetime=timestamp_int,
-                                                                   altitude=geo_altitude)
+                        disturbance.callsigns.append(Callsign(callsign=callsign,
+                                                              datetime=timestamp_int,
+                                                              altitude=geo_altitude))
 
                         # obtain trajectory if plot is needed
                         if plot:
@@ -164,6 +170,7 @@ class DisturbanceFinder:
         else:
             disturbance.img = None
 
+        # sort disturbances by timestamp
         return disturbances
 
     def find_disturbances(self,
