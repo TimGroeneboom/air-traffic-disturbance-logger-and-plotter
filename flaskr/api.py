@@ -1,17 +1,14 @@
-import json
 import multiprocessing
-from datetime import datetime, timedelta
-from time import sleep
-import flaskr.environment
+from datetime import timedelta
+from multiprocessing import Process
 import requests
 from flasgger import swag_from
 from flask import Blueprint, request
-from flaskr.atomicinteger import AtomicInteger
+import flaskr.environment
+from flaskr.jobqueue import JobQueue
 from ovm.disturbancefinder import DisturbanceFinder
 from ovm.environment import load_environment
 from ovm.utils import convert_int_to_datetime
-from multiprocessing import Pool, Process
-from multiprocessing import Value
 
 # Create api page
 api_page = Blueprint('api', __name__, template_folder='templates')
@@ -19,11 +16,35 @@ api_page = Blueprint('api', __name__, template_folder='templates')
 # Load environment
 environment = load_environment('environment.json')
 
-# Max active workers, requests will wait and hold
-max_workers: int = 8
+# Create job queue
+queue = JobQueue(processes=flaskr.environment.MAX_WORKERS,
+                 max_size=flaskr.environment.MAX_SIZE_JOB_QUEUE)
 
-# Atomic integer, counting current active workers
-worker_count: AtomicInteger = AtomicInteger(0)
+
+def task(function, args):
+    # Create a queue to share data with between this and new process
+    shared_queue = multiprocessing.Queue()
+
+    # Create & start process
+    process = Process(target=function, args=(shared_queue, args))
+    process.start()
+
+    # Get data from process
+    data = shared_queue.get()
+
+    # Join process
+    process.join()
+
+    # Some exception occurred if exit code is not 0
+    # data will be exception message, pass it on
+    if process.exitcode != 0:
+        process.close()
+        raise Exception(data)
+
+    # Finally close the process
+    process.close()
+
+    return data
 
 
 @swag_from('swagger/find_disturbances.yml', methods=['GET'])
@@ -51,8 +72,7 @@ def find_flights_api():
 def execute(function, args):
     """
     All api calls get executed by this function
-    Waits if max worker threads has exceeded
-    Fires up a new process if worker is available
+    Queues task in a job queue and waits for it to finish
     Returns response object in json on success
     {
         status: 'OK',
@@ -68,52 +88,28 @@ def execute(function, args):
     :return: response object with status and value
     """
 
-    # Wait 100 millis for worker to finish
-    while worker_count.value >= flaskr.environment.MAX_WORKERS:
-        sleep(0.1)
-
-    # Increment worker count
-    worker_count.inc(1)
-
     # Create response dict
     response = {}
 
     # Try and execute the API call and fill response object
     try:
-        # We fire up a new thread, because matplotlib needs this in order to use it from
-        # multiple threads
+        # Queue a new task
+        job = queue.queue(task, function, args)
 
-        # Create a queue to share data with between this and new process
-        shared_queue = multiprocessing.Queue()
+        # Wait for the job to finish
+        while job.is_finished() is False:
+            pass
 
-        # Create & start process
-        process = Process(target=function, args=(shared_queue, args))
-        process.start()
-
-        # Get data from process
-        data = shared_queue.get()
-
-        # Join process
-        process.join()
-
-        # Some exception occurred if exit code is not 0
-        # data will be exception message, pass it on
-        if process.exitcode != 0:
-            process.close()
-            raise Exception(data)
-
-        # Finally close the process
-        process.close()
-
-        # At this point we can assume the data is valid
-        response['value'] = data
-        response['status'] = 'OK'
+        if job.success():
+            # At this point we can assume the data is valid
+            result = job.result()
+            response['value'] = result
+            response['status'] = 'OK'
+        else:
+            raise Exception(job.result())
     except Exception as e:
         response['value'] = e.__str__()
         response['status'] = 'ERROR'
-
-    # Decrement worker count
-    worker_count.dec(1)
 
     # Return response object
     return response
@@ -167,6 +163,7 @@ def find_disturbances_process(shared_queue, args):
     except Exception as ex:
         shared_queue.put(ex.__str__())
         exit(1)
+
 
 
 def find_flights_process(shared_queue, args):
@@ -225,17 +222,30 @@ def get_lat_lon_from_pro6pp(args):
     :return: latitude and longitude
     """
     postalcode = args['postalcode']
+
+    # remove whitespaces from postal code
     postalcode = postalcode.lstrip().rstrip()
-    if len(postalcode) == 6 and check_key_and_value(args, 'streetnumber'):
-        streetnumber = float(args['streetnumber'])
+    postalcode = postalcode.replace(' ', '')
+
+    if len(postalcode) == 6 and args.get('streetnumber', type=str) is not None:
+        streetnumber = str(args['streetnumber'])
+
+        # Remove characters from streetnumber
+        numbers = [int(s) for s in streetnumber if s.isdigit()]
+        if len(numbers)<=0:
+            raise Exception('No numbers found in streetnumber')
+
+        number: str = ''
+        for n in numbers:
+            number += str(n)
 
         url = '%s?' \
               'authKey=%s&' \
               'postalCode=%s&' \
-              'streetNumberAndPremise=%i' % \
+              'streetNumberAndPremise=%s' % \
               (flaskr.environment.PRO6PP_API_AUTO_COMPLETE_URL,
                flaskr.environment.PRO6PP_AUTH_KEY,
-               postalcode, streetnumber)
+               postalcode, number)
 
         data = requests.get(url).json()
 
@@ -251,7 +261,7 @@ def get_lat_lon_from_pro6pp(args):
         url = '%s?' \
               'authKey=%s&' \
               'targetPostalCodes=%s&' \
-              'postalCode=%s'% \
+              'postalCode=%s' % \
               (flaskr.environment.PRO6PP_API_AUTO_LOCATOR_URL,
                flaskr.environment.PRO6PP_AUTH_KEY,
                postalcode, postalcode)
@@ -288,36 +298,37 @@ def process_input(args, extra_args: list = []):
     args_mutable_dict = dict(args)
 
     # Sanity check input
-    if check_key_and_value(args, 'postalcode') is False:
-        if check_key_and_value(args, 'lat') is False:
+
+    if args.get('postalcode', type=str) is None:
+        if args.get('lat', type=float) is None:
             raise Exception('lat cannot be None if no postalcode and/or streetnumber is given')
 
-        if check_key_and_value(args, 'lon') is False:
+        if args.get('lon', type=float) is None:
             raise Exception('lon cannot be None if no postalcode  and/or postal code is given')
-    elif check_key_and_value(args, 'lat') is False or check_key_and_value(args, 'lon') is False:
-        if check_key_and_value(args, 'postalcode') is False:
+    elif args.get('lat', type=float) is None or args.get('lon', type=float) is None:
+        if args.get('postalcode') is None:
             raise Exception('postalcode cannot be None if no lat, lon is given')
 
     # postalcode and streetnumber override lat-lon
-    if check_key_and_value(args, 'postalcode'):
+    if args.get('postalcode', type=str) is not None:
         data = get_lat_lon_from_pro6pp(args)
         args_mutable_dict['lat'] = data[0]
         args_mutable_dict['lon'] = data[1]
 
-    if check_key_and_value(args, 'radius') is False:
+    if args.get('radius', type=int) is None:
         raise Exception('radius cannot be None')
 
-    if check_key_and_value(args, 'altitude') is False:
+    if args.get('altitude', type=int) is None:
         raise Exception('altitude cannot be None')
 
-    if check_key_and_value(args, 'begin') is False:
+    if args.get('begin', type=int) is None:
         raise Exception('begin cannot be None')
 
-    if check_key_and_value(args, 'end') is False:
+    if args.get('begin', type=int) is None:
         raise Exception('end cannot be None')
 
     for extra_arg in extra_args:
-        if check_key_and_value(args, extra_arg) is False:
+        if args.get(extra_arg) is None:
             raise Exception('Expected %s argument but key is not present' % extra_arg)
 
     radius = int(args['radius'])
@@ -332,28 +343,13 @@ def process_input(args, extra_args: list = []):
         raise Exception('Begin cannot be later then end')
 
     # Sanity check radius
-    if radius > 2000:
-        raise Exception('Radius may not be larger than %i meters' % 2000)
-    if radius < 100:
-        raise Exception('Radius cannot be smaller than %i meters' % 100)
+    if radius > 5000:
+        raise Exception('Radius may not be larger than %i meters' % 4000)
+    if radius < 500:
+        raise Exception('Radius cannot be smaller than %i meters' % 500)
 
     # Sanity check altitude
     if altitude < 100:
         raise Exception('Altitude cannot be smaller than %i meters' % 100)
 
     return args_mutable_dict
-
-
-def check_key_and_value(args, key):
-    """
-    Checks if key is present in dict and if key is not None
-    returns True on success
-    :param args: the dict
-    :param key: the key
-    :return: True on success
-    """
-    if key in args:
-        if args[key] is not None:
-            return True
-
-    return False

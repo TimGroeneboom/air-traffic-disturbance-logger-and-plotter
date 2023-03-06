@@ -1,5 +1,4 @@
 import base64
-import json
 import uuid
 from datetime import datetime, timedelta
 import os
@@ -174,5 +173,5 @@ def get_lat_lon_or_postal_streetnumber(args):
     else:
         data = 'postalcode=%s' % args['postalcode']
         if len(args['streetnumber']) > 0:
-            data += '&streetnumber=%i' % int(args['streetnumber'])
+            data += '&streetnumber=%s' % str(args['streetnumber'])
         return data
