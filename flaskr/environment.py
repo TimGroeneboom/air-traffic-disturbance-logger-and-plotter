@@ -5,3 +5,4 @@ PRO6PP_API_AUTO_LOCATOR_URL = 'https://api.pro6pp.nl/v2/locator/nl'
 
 # API configuration
 MAX_WORKERS = 8
+MAX_SIZE_JOB_QUEUE = 1000

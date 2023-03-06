@@ -150,7 +150,7 @@ class DisturbanceFinder:
         if plot:
             # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
             # trajectories
-            bbox = utils.get_geo_bbox_around_coord(origin, (radius + 1000) / 1000.0)
+            bbox = utils.get_geo_bbox_around_coord(origin, (radius) / 1000.0)
 
             # Make plot of all callsign trajectories
             logging.info('Generating trajectory plot')

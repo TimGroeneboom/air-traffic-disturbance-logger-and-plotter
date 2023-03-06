@@ -6,6 +6,7 @@ from flaskr.testapi import test_api_page
 from flaskr.api import api_page
 from flasgger import Swagger, LazyJSONEncoder
 
+
 # Create app
 app = Flask(__name__)
 
