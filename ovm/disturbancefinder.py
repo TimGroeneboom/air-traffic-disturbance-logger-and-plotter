@@ -108,7 +108,6 @@ class DisturbanceFinder:
                             # Create trajectory and append coordinate
                             trajectories[callsign] = Trajectory()
                             trajectories[callsign].callsign = callsign
-                            trajectories[callsign].coords.append((flight_coord[1], flight_coord[0]))
                             trajectories[callsign].average_altitude += geo_altitude
 
                             # Get timestamp
