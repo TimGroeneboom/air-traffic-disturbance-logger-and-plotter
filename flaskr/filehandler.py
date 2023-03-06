@@ -24,7 +24,7 @@ for filename in os.listdir(temp_dir):
 seconds_till_delete = 5 * 60
 
 
-# Background sceduled task, deletes files older than seconds_till_delete
+# Background scheduled job, deletes files older than seconds_till_delete
 def remove_temp_files():
     # Remove previous temp files
     now = datetime.datetime.now()
@@ -35,8 +35,3 @@ def remove_temp_files():
             logging.info('Removing old %s temp file' % filename)
             os.remove(f)
 
-
-# Fire up the scheduler
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=remove_temp_files, trigger="interval", seconds=60)
-scheduler.start()
