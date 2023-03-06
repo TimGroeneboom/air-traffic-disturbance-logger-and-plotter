@@ -18,7 +18,7 @@ class Disturbance:
     Holds begin & end time of found disturbance, callsigns and a plotted jpg image encoded as string
     """
 
-    callsigns: dict = field(default_factory=dict)
+    callsigns: list = field(default_factory=list)
 
     begin: str = field(default_factory=str)
 
