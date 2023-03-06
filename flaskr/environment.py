@@ -23,3 +23,6 @@ PLANELOGGER_BBOX = (49.44, 54.16, 2.82, 7.02)
 # deploy test API
 DEPLOY_TEST_API = True
 
+# loglevel
+LOGLEVEL='INFO'
+

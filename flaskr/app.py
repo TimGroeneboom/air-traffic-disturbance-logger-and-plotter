@@ -29,16 +29,11 @@ swagger = Swagger(app,
 
 # Run
 if __name__ == '__main__':
-    # parse cli arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-l', '--loglevel',
-                        type=str.upper,
-                        default='INFO',
-                        help='LOG Level (DEBUG, INFO, WARNING, ERROR, CRITICAL)')
-    args = parser.parse_args()
-
     # Set log level
-    logging.basicConfig(level=args.loglevel)
+    logging.basicConfig(level=environment.LOGLEVEL)
+
+    # Setup scheduler
+    scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
     # Setup scheduler
     scheduler = Scheduler(loglevel=args.loglevel)
