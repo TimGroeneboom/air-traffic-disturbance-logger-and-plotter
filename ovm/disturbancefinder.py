@@ -137,7 +137,7 @@ class DisturbanceFinder:
                             # Obtain coordinates of the callsign in the found timestamps
                             for key, value in ordered_dict.items():
                                 for other_state in value:
-                                    if other_state['callsign'] == callsign:
+                                    if utils.remove_whitespace(other_state['callsign']) == callsign:
                                         new_altitude = other_state['geo_altitude']
                                         if new_altitude is not None:
                                             # Obtain lat lon from location to compute distance from complainant origin
