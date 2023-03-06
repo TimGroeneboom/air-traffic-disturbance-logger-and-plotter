@@ -39,7 +39,7 @@ get:
       - in: query
         name: streetnumber
         schema:
-          type: integer
+          type: string
         required: false
         description: streetnumber, together with postalcode, overrides lat-lon
       - in: query

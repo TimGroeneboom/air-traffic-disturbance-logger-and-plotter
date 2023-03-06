@@ -1,5 +1,4 @@
 import io
-import threading
 from datetime import datetime
 import matplotlib
 import pandas as pd
