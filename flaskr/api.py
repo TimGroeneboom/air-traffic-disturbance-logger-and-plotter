@@ -5,7 +5,8 @@ import requests
 from flasgger import swag_from
 from flask import Blueprint, request
 import flaskr.environment
-from flaskr.jobqueue import JobQueue
+from flaskr.utils.jobqueue import JobQueue
+from flaskr.utils.latloncache import LatLonCache
 from ovm.disturbancefinder import DisturbanceFinder
 from ovm.environment import load_environment
 from ovm.utils import convert_int_to_datetime
@@ -19,6 +20,10 @@ environment = load_environment('environment.json')
 # Create job queue
 queue = JobQueue(processes=flaskr.environment.MAX_WORKERS,
                  max_size=flaskr.environment.MAX_SIZE_JOB_QUEUE)
+
+# Get latlon cache
+latlon_cache = LatLonCache(environment=environment,
+                           expire_days=flaskr.environment.LATLON_CACHE_EXPIRATION_DAYS)
 
 
 def task(function, args):
@@ -226,65 +231,71 @@ def get_lat_lon_from_pro6pp(args):
     # remove whitespaces from postal code
     postalcode = postalcode.lstrip().rstrip()
     postalcode = postalcode.replace(' ', '')
+    address_key = postalcode + args.get('streetnumber', type=str, default='')
 
-    if len(postalcode) == 6 and args.get('streetnumber', type=str) is not None:
-        streetnumber = str(args['streetnumber'])
+    if latlon_cache.address_valid(address_key):
+        return latlon_cache.get_latlon_from_address(address_key)
+    else:
+        if len(postalcode) == 6 and args.get('streetnumber', type=str) is not None:
+            streetnumber = str(args['streetnumber'])
 
-        # Remove characters from streetnumber
-        numbers = [int(s) for s in streetnumber if s.isdigit()]
-        if len(numbers)<=0:
-            raise Exception('No numbers found in streetnumber')
+            # Remove characters from streetnumber
+            numbers = [int(s) for s in streetnumber if s.isdigit()]
+            if len(numbers)<=0:
+                raise Exception('No numbers found in streetnumber')
 
-        number: str = ''
-        for n in numbers:
-            number += str(n)
+            number: str = ''
+            for n in numbers:
+                number += str(n)
 
-        url = '%s?' \
-              'authKey=%s&' \
-              'postalCode=%s&' \
-              'streetNumberAndPremise=%s' % \
-              (flaskr.environment.PRO6PP_API_AUTO_COMPLETE_URL,
-               flaskr.environment.PRO6PP_AUTH_KEY,
-               postalcode, number)
+            url = '%s?' \
+                  'authKey=%s&' \
+                  'postalCode=%s&' \
+                  'streetNumberAndPremise=%s' % \
+                  (flaskr.environment.PRO6PP_API_AUTO_COMPLETE_URL,
+                   flaskr.environment.PRO6PP_AUTH_KEY,
+                   postalcode, number)
 
-        data = requests.get(url).json()
+            data = requests.get(url).json()
 
-        if 'lat' not in data or 'lng' not in data:
-            err = 'Could not get latitude or longitude from pro6pp server'
-            if 'error_id' in data:
-                err += ' : ' + data['error_id']
-            raise Exception(err)
+            if 'lat' not in data or 'lng' not in data:
+                err = 'Could not get latitude or longitude from pro6pp server'
+                if 'error_id' in data:
+                    err += ' : ' + data['error_id']
+                raise Exception(err)
 
-        return data['lat'], data['lng']
-    elif len(postalcode) == 4 or len(postalcode) == 6:
-        postalcode = postalcode[0:4]
-        url = '%s?' \
-              'authKey=%s&' \
-              'targetPostalCodes=%s&' \
-              'postalCode=%s' % \
-              (flaskr.environment.PRO6PP_API_AUTO_LOCATOR_URL,
-               flaskr.environment.PRO6PP_AUTH_KEY,
-               postalcode, postalcode)
+            latlon_cache.add_or_update_address(address_key, (data['lat'], data['lng']))
+            return data['lat'], data['lng']
+        elif len(postalcode) == 4 or len(postalcode) == 6:
+            postalcode = postalcode[0:4]
+            url = '%s?' \
+                  'authKey=%s&' \
+                  'targetPostalCodes=%s&' \
+                  'postalCode=%s' % \
+                  (flaskr.environment.PRO6PP_API_AUTO_LOCATOR_URL,
+                   flaskr.environment.PRO6PP_AUTH_KEY,
+                   postalcode, postalcode)
 
-        response = requests.get(url).json()
+            response = requests.get(url).json()
 
-        if isinstance(response, list):
-            if len(response) >= 1:
-                data = response[0]
-                if 'lat' not in data or 'lng' not in data:
-                    err = 'Could not get latitude or longitude from pro6pp server'
-                    if 'error_id' in data:
-                        err += ' : ' + data['error_id']
-                    raise Exception(err)
+            if isinstance(response, list):
+                if len(response) >= 1:
+                    data = response[0]
+                    if 'lat' not in data or 'lng' not in data:
+                        err = 'Could not get latitude or longitude from pro6pp server'
+                        if 'error_id' in data:
+                            err += ' : ' + data['error_id']
+                        raise Exception(err)
 
-                return data['lat'], data['lng']
+                    latlon_cache.add_or_update_address(address_key, (data['lat'], data['lng']))
+                    return data['lat'], data['lng']
+                else:
+                    raise Exception('Returned list is empty')
             else:
-                raise Exception('Returned list is empty')
-        else:
-            err = 'Invalid response from pro6pp'
-            if 'error_id' in response:
-                err += ' : ' + response['error_id']
-            raise Exception(err)
+                err = 'Invalid response from pro6pp'
+                if 'error_id' in response:
+                    err += ' : ' + response['error_id']
+                raise Exception(err)
 
     raise Exception('No valid data supplied to get lat, lon from postalcode')
 
