@@ -27,6 +27,14 @@ latlon_cache = LatLonCache(environment=environment,
 
 
 def task(function, args):
+    """
+    A Task encapsulates an api call and expects a result to be put in a shared queue
+    We create a new process because matplotlib cannot run from multiple threads within the same context
+    :param function: the api function call
+    :param args: the arguments
+    :return: the data returned by the function, data has error string if exception is raised
+    """
+
     # Create a queue to share data with between this and new process
     shared_queue = multiprocessing.Queue()
 
@@ -170,13 +178,13 @@ def find_disturbances_process(shared_queue, args):
         exit(1)
 
 
-
 def find_flights_process(shared_queue, args):
     """
     Process of finding flights, exits on error or completion
     :param shared_queue: the shared_queue where data will be put
     :param args: arguments
     """
+
     try:
         # Sanity check input
         modified_args = process_input(args)
@@ -226,6 +234,7 @@ def get_lat_lon_from_pro6pp(args):
     :param args: dict, except postalcode and streetnumber as keys
     :return: latitude and longitude
     """
+
     postalcode = args['postalcode']
 
     # remove whitespaces from postal code
@@ -241,7 +250,7 @@ def get_lat_lon_from_pro6pp(args):
 
             # Remove characters from streetnumber
             numbers = [int(s) for s in streetnumber if s.isdigit()]
-            if len(numbers)<=0:
+            if len(numbers) <= 0:
                 raise Exception('No numbers found in streetnumber')
 
             number: str = ''
