@@ -118,9 +118,9 @@ class DisturbanceFinder:
 
                             # Get timestamp
                             timestamp_int = document['Time']
-                            items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(4)
-                            items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
-                                [('Time', pymongo.DESCENDING)]).limit(4)
+                            items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(6)
+                            items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
+                                [('Time', pymongo.DESCENDING)]).limit(6)
                             dictionary = ***REMOVED******REMOVED***
 
                             # Get 4 states before and after current timestamp

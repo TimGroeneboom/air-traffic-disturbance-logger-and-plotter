@@ -50,6 +50,9 @@ class PlaneLogger:
         # Obtain current states
         logging.info(self.prepare_log('Obtaining states from opensky network'))
         state_collection = self.opensky_api.get_states(bbox=bbox)
+        if state_collection is None:
+            logging.error(self.prepare_log('Failed to obtain states from opensky'))
+            return
 
         # Create states list with interesting data and store list in mongo db with timestamp as key value
         logging.info(self.prepare_log('Storing %i states in database' % len(state_collection.states)))
