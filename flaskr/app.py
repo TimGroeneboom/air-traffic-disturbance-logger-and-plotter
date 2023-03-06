@@ -35,8 +35,5 @@ if __name__ == '__main__':
     # Setup scheduler
     scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
-    # Setup scheduler
-    scheduler = Scheduler(loglevel=args.loglevel)
-
     # Run app
     app.run()
