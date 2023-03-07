@@ -1,4 +1,4 @@
-# Air Traffic Disturbance Logger & Plotter v1.0
+# Air Traffic Disturbance Logger & Plotter
 
 This project aims to automatically log air traffic disturbance in your area. It uses the [opensky network](https://opensky-network.org/) to track air traffic around certain geographic bounds. 
 
