@@ -9,6 +9,8 @@ class Callsign:
 
     altitude: int = field(default_factory=int)
 
+    icao24: str = field(default_factory=str)
+
 
 
 @dataclass

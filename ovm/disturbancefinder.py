@@ -90,6 +90,9 @@ class DisturbanceFinder:
                 if callsign_already_registered:
                     continue
 
+                # Obtain icao24
+                icao24 = utils.xstr(state['icao24'])
+
                 # Obtain altitude
                 geo_altitude = state['geo_altitude']
 
@@ -107,7 +110,8 @@ class DisturbanceFinder:
                     if distance < radius:
                         disturbance.callsigns.append(Callsign(callsign=callsign,
                                                               datetime=timestamp_int,
-                                                              altitude=geo_altitude))
+                                                              altitude=geo_altitude,
+                                                              icao24=icao24))
 
                         # obtain trajectory if plot is needed
                         if plot:
@@ -249,7 +253,11 @@ class DisturbanceFinder:
                 # Get callsign
                 callsign = state['callsign']
 
+                # Obtain altitude
                 geo_altitude = state['geo_altitude']
+
+                # Obtain icao24
+                icao24 = utils.xstr(state['icao24'])
 
                 # Ignore grounded planes
                 if geo_altitude is None:
@@ -281,7 +289,9 @@ class DisturbanceFinder:
 
                         # if callsign is not already logged for this disturbance, do it now
                         if callsign not in disturbances.keys():
-                            disturbances[callsign] = timestamp_int
+                            disturbances[callsign] = ***REMOVED*** 'timestamp': timestamp_int,
+                                                       'altitude': geo_altitude,
+                                                       'icao24': icao24***REMOVED***
 
             # Check if disturbance has ended and if we need to generate a complaint within set parameters
             if not disturbance_in_this_timestamp:
@@ -339,9 +349,10 @@ class DisturbanceFinder:
                 # Create trajectories for complaint
                 logging.info(
                     'Collecting trajectories for %i flights' % (len(disturbance_period.disturbances.items())))
-                for callsign, datetime_int in disturbance_period.disturbances.items():
+                for callsign, value in disturbance_period.disturbances.items():
                     # Gather states before and after this entry to plot a trajectory for callsign
                     dictionary = ***REMOVED******REMOVED***
+                    datetime_int = value['timestamp']
                     items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': datetime_int***REMOVED******REMOVED***).limit(6)
                     items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': datetime_int***REMOVED******REMOVED***).sort(
                         [('Time', pymongo.DESCENDING)]).limit(6)
@@ -369,22 +380,27 @@ class DisturbanceFinder:
                     # Add it to the trajectories of this complaint and store callsign
                     trajectory.average_altitude /= len(trajectory.coords)
                     disturbance_period.trajectories[callsign] = trajectory
-                    callsigns.append(Callsign(callsign=callsign, datetime=datetime_int, altitude=trajectory.average_altitude))
+                    callsigns.append(Callsign(callsign=callsign,
+                                              datetime=datetime_int,
+                                              altitude=trajectory.average_altitude,
+                                              icao24=value['icao24']))
             else:
-                for callsign, datetime_int in disturbance_period.disturbances.items():
-                    callsigns.append(Callsign(callsign=callsign, datetime=datetime_int, altitude=geo_altitude))
+                for callsign, value in disturbance_period.disturbances.items():
+                    callsigns.append(Callsign(callsign=callsign,
+                                              datetime=value['timestamp'],
+                                              altitude=value['altitude'],
+                                              icao24=value['icao24']))
 
             if plot:
-                # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
-                # trajectories
-                bbox = utils.get_geo_bbox_around_coord(origin=origin, radius=(radius + 1000) / 1000.0)
+                # Set the bounding box for our area of interest
+                bbox = utils.get_geo_bbox_around_coord(origin=origin, radius=radius / 1000.0)
 
                 # Make plot of all callsign trajectories
                 logging.info('Generating disturbance period plot with title %s', title)
                 disturbance_period.plot = plot_trajectories(bbox=bbox,
                                                             trajectories=disturbance_period.trajectories,
                                                             origin=origin,
-                                                            title=radius,
+                                                            title=title,
                                                             begin=disturbance_period.begin,
                                                             end=disturbance_period.end,
                                                             tile_zoom=zoomlevel)

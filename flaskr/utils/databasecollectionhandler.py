@@ -24,3 +24,19 @@ class DatabaseCollectionHandler:
         timestamp_int = convert_datetime_to_int(timestamp)
         self.collection.delete_many(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***)
 
+    def add_property_to_all_states(self, property_name: str, default_value):
+        cursor = self.collection.find(***REMOVED******REMOVED***).allow_disk_use(True)
+        for doc in cursor:
+            # Get all states
+            states = doc['States']
+            timestamp = doc['Time']
+            update = False
+            for state in states:
+                if property_name not in state:
+                    state[property_name] = default_value
+                    update = True
+            if update:
+                self.collection.update_one(***REMOVED***'Time': timestamp***REMOVED***, ***REMOVED***"$set": ***REMOVED***'States': states***REMOVED******REMOVED***)
+
+
+
