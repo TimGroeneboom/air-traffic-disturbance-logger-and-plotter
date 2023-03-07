@@ -1,7 +1,6 @@
 import logging
 import os
 import datetime
-from apscheduler.schedulers.background import BackgroundScheduler
 
 # Static directory
 static_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static')

@@ -26,40 +26,6 @@ latlon_cache = LatLonCache(environment=environment,
                            expire_days=flaskr.environment.LATLON_CACHE_EXPIRATION_DAYS)
 
 
-def task(function, args):
-    """
-    A Task encapsulates an api call and expects a result to be put in a shared queue
-    We create a new process because matplotlib cannot run from multiple threads within the same context
-    :param function: the api function call
-    :param args: the arguments
-    :return: the data returned by the function, data has error string if exception is raised
-    """
-
-    # Create a queue to share data with between this and new process
-    shared_queue = multiprocessing.Queue()
-
-    # Create & start process
-    process = Process(target=function, args=(shared_queue, args))
-    process.start()
-
-    # Get data from process
-    data = shared_queue.get()
-
-    # Join process
-    process.join()
-
-    # Some exception occurred if exit code is not 0
-    # data will be exception message, pass it on
-    if process.exitcode != 0:
-        process.close()
-        raise Exception(data)
-
-    # Finally close the process
-    process.close()
-
-    return data
-
-
 @swag_from('swagger/find_disturbances.yml', methods=['GET'])
 @api_page.route('/api/find_disturbances')
 def find_disturbances_api():
@@ -80,52 +46,6 @@ def find_flights_api():
     """
     return execute(function=find_flights_process,
                    args=request.args)
-
-
-def execute(function, args):
-    """
-    All api calls get executed by this function
-    Queues task in a job queue and waits for it to finish
-    Returns response object in json on success
-    ***REMOVED***
-        status: 'OK',
-        value: <string> <-- JSON string
-  ***REMOVED***
-    Returns response object in json on failure
-    ***REMOVED***
-        status: 'ERROR',
-        value: <string> <-- failure description
-  ***REMOVED***
-    :param function: function to execute
-    :param args: arguments that need to be passed into the function
-    :return: response object with status and value
-    """
-
-    # Create response dict
-    response = ***REMOVED******REMOVED***
-
-    # Try and execute the API call and fill response object
-    try:
-        # Queue a new task
-        job = queue.queue(task, function, args)
-
-        # Wait for the job to finish
-        while job.is_finished() is False:
-            pass
-
-        if job.success():
-            # At this point we can assume the data is valid
-            result = job.result()
-            response['value'] = result
-            response['status'] = 'OK'
-        else:
-            raise Exception(job.result())
-    except Exception as e:
-        response['value'] = e.__str__()
-        response['status'] = 'ERROR'
-
-    # Return response object
-    return response
 
 
 def find_disturbances_process(shared_queue, args):
@@ -224,6 +144,86 @@ def find_flights_process(shared_queue, args):
     except Exception as ex:
         shared_queue.put(ex.__str__())
         exit(1)
+
+
+def execute(function, args):
+    """
+    All api calls get executed by this function
+    Queues task in a job queue and waits for it to finish
+    Returns response object in json on success
+    ***REMOVED***
+        status: 'OK',
+        value: <string> <-- JSON string
+  ***REMOVED***
+    Returns response object in json on failure
+    ***REMOVED***
+        status: 'ERROR',
+        value: <string> <-- failure description
+  ***REMOVED***
+    :param function: function to execute
+    :param args: arguments that need to be passed into the function
+    :return: response object with status and value
+    """
+
+    # Create response dict
+    response = ***REMOVED******REMOVED***
+
+    # Try and execute the API call and fill response object
+    try:
+        # Queue a new task
+        job = queue.queue(task, function, args)
+
+        # Wait for the job to finish
+        while job.is_finished() is False:
+            pass
+
+        if job.success():
+            # At this point we can assume the data is valid
+            result = job.result()
+            response['value'] = result
+            response['status'] = 'OK'
+        else:
+            raise Exception(job.result())
+    except Exception as e:
+        response['value'] = e.__str__()
+        response['status'] = 'ERROR'
+
+    # Return response object
+    return response
+
+
+def task(function, args):
+    """
+    A Task encapsulates an api call and expects a result to be put in a shared queue
+    We create a new process because matplotlib cannot run from multiple threads within the same context
+    :param function: the api function call
+    :param args: the arguments
+    :return: the data returned by the function, data has error string if exception is raised
+    """
+
+    # Create a queue to share data with between this and new process
+    shared_queue = multiprocessing.Queue()
+
+    # Create & start process
+    process = Process(target=function, args=(shared_queue, args))
+    process.start()
+
+    # Get data from process
+    data = shared_queue.get()
+
+    # Join process
+    process.join()
+
+    # Some exception occurred if exit code is not 0
+    # data will be exception message, pass it on
+    if process.exitcode != 0:
+        process.close()
+        raise Exception(data)
+
+    # Finally close the process
+    process.close()
+
+    return data
 
 
 def get_lat_lon_from_pro6pp(args):
