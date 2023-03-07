@@ -4,9 +4,9 @@ from flask import request
 # Setup swagger template
 swagger_template = dict(
     info= ***REMOVED***
-        'title': LazyString(lambda: 'Flight & Disturbance finder'),
-        'version': LazyString(lambda: '0.1'),
-        'description': LazyString(lambda: 'This document describes the Flight & Disturbance finder rest API'),
+        'title': LazyString(lambda: 'Air Traffic Disturbance Logger & Plotter'),
+        'version': LazyString(lambda: '1.0'),
+        'description': LazyString(lambda: 'This document describes the Air Traffic Disturbance Logger & Plotter REST API'),
   ***REMOVED***
     host=LazyString(lambda: request.host)
 )
@@ -24,18 +24,6 @@ swagger_config = ***REMOVED***
         ***REMOVED***
             "endpoint": 'find_flights',
             "route": '/swagger/find_flights.json',
-            "rule_filter": lambda rule: True,
-            "model_filter": lambda tag: True,
-      ***REMOVED***
-        ***REMOVED***
-            "endpoint": 'find_disturbances_pro6pp',
-            "route": '/swagger/find_disturbances_pro6pp.json',
-            "rule_filter": lambda rule: True,
-            "model_filter": lambda tag: True,
-      ***REMOVED***
-        ***REMOVED***
-            "endpoint": 'find_flights_pro6pp',
-            "route": '/swagger/find_disturbances_pro6pp.json',
             "rule_filter": lambda rule: True,
             "model_filter": lambda tag: True,
       ***REMOVED***

@@ -23,7 +23,6 @@ class Job:
         self._is_finished = False
         self._result = None
         self._success = False
-        self.__result = None
         self._thread = threading.Thread(target=self.__worker_thread)
         self._thread.daemon = True
         self._exception = None
@@ -57,8 +56,8 @@ class Job:
 
             self.lock.acquire()
             self._result = result
-            self._is_finished = True
             self._success = success
+            self._is_finished = True
             self.lock.release()
 
     def is_finished(self):
@@ -73,23 +72,22 @@ class Job:
 
     def result(self):
         """
-        Returns Results from job, thread-safe
+        Returns Results from job, returns None if job is not yet finished, thread-safe
         :return: Results from job
         """
-        self.lock.acquire()
-        result = self._result
-        self.lock.release()
-        return result
+        if self.is_finished():
+            return self._result
+        return None
 
     def success(self):
         """
-        Returns True if job is finished successfully, thread-safe
+        Returns True if job is finished successfully, returns False if Job is not yet finished or Job did not finish
+        successfully, thread-safe
         :return: True if job is finished successfully
         """
-        self.lock.acquire()
-        success = self._success
-        self.lock.release()
-        return success
+        if self.is_finished():
+            return self._success
+        return False
 
 
 class JobQueue:
