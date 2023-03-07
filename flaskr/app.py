@@ -1,13 +1,12 @@
-import argparse
 import logging
 from flask import Flask
-import flaskr.environment
 from flaskr.scheduler import Scheduler
 from flaskr.swagger import swagger_template, swagger_config
 from flaskr.testapi import test_api_page
 from flaskr.api import api_page
 from flasgger import Swagger, LazyJSONEncoder
 from flaskr import environment
+
 
 def create_app():
     # Create app
@@ -35,7 +34,7 @@ def create_app():
     return app
 
 
-# Fire up app
+# Fire up app from cli
 if __name__ == '__main__':
     create_app().run()
 
