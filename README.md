@@ -2,14 +2,14 @@
 
 This project aims to automatically log air traffic disturbance in your area. It uses the [opensky network](https://opensky-network.org/) to track air traffic around certain geographic bounds. 
 
-Air traffic is stored in a MongoDB. See [logger.py](##logger.py). Disturbance checking and plotting is done using [disturbancecheck.py](##disturbancecheck.py)
+Air traffic is stored in a MongoDB. See logger.py. Disturbance checking and plotting is done using disturbancecheck.py
 
-Also, this project contains a Flask app that combines logging and plotting and serves the air traffic data using a REST API. See [Setup Flask App](#Setup Flask App) for instructions.
+Also, this project contains a Flask app that combines logging and plotting and serves the air traffic data using a REST API. See Setup Flask App for instructions.
 
 This project was deployed/and tested on Ubuntu 22.04 and Python 3.10
 
 The following README assumes you're somewhat comfortable setting up Python virtual environments and that MongoDB is installed.
-See [MongoDB Installation](#https://www.mongodb.com/docs/manual/installation/)
+See [MongoDB Installation](https://www.mongodb.com/docs/manual/installation/)
 
 ## logger.py
 Logs air traffic within certain geographic bounds and writes entries into a MongoDB database
