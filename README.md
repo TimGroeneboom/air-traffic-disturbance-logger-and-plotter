@@ -8,6 +8,9 @@ Also, this project contains a Flask app that combines logging and plotting and s
 
 This project was deployed/and tested on Ubuntu 22.04 and Python 3.10
 
+The following README assumes you're somewhat comfortable setting up Python virtual environments and that MongoDB is installed.
+See [MongoDB Installation](#https://www.mongodb.com/docs/manual/installation/)
+
 ## logger.py
 Logs air traffic within certain geographic bounds and writes entries into a MongoDB database
 
@@ -69,6 +72,11 @@ options:
                         Zoom level of contextly maps
 ```
 
+## environment.json
+
+The ```environment.json``` in the repository root directory contains configuration needed for both logger and disturbancecheck to run. It contains the following:
+* OpenSKY credentials
+* MongoDB configuration
 
 # Setup Flask App
 
@@ -79,8 +87,7 @@ All files necessary for Flask to run the server-side application are contained i
 * Documentation is done using swagger
 * Optionally, serves a user-friendly test HTML page around ```find_flights``` and ```find_disturbances```
 
-To run the flask app. The following steps assume you're somewhat comfortable setting up Python virtual environments and that MongoDB is installed.
-See [MongoDB Installation](#https://www.mongodb.com/docs/manual/installation/)
+To run the flask app. 
 
 * Clone this repository
 * CD to root directory of the cloned repository
