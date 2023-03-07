@@ -349,10 +349,10 @@ class DisturbanceFinder:
                 # Create trajectories for complaint
                 logging.info(
                     'Collecting trajectories for %i flights' % (len(disturbance_period.disturbances.items())))
-                for callsign, value in disturbance_period.disturbances.items():
+                for callsign, entry in disturbance_period.disturbances.items():
                     # Gather states before and after this entry to plot a trajectory for callsign
                     dictionary = {}
-                    datetime_int = value['timestamp']
+                    datetime_int = entry['timestamp']
                     items_before = states_collection.find({'Time': {'$gte': datetime_int}}).limit(6)
                     items_after = states_collection.find({'Time': {'$lte': datetime_int}}).sort(
                         [('Time', pymongo.DESCENDING)]).limit(6)
@@ -383,13 +383,13 @@ class DisturbanceFinder:
                     callsigns.append(Callsign(callsign=callsign,
                                               datetime=datetime_int,
                                               altitude=trajectory.average_altitude,
-                                              icao24=value['icao24']))
+                                              icao24=entry['icao24']))
             else:
-                for callsign, value in disturbance_period.disturbances.items():
+                for callsign, entry in disturbance_period.disturbances.items():
                     callsigns.append(Callsign(callsign=callsign,
-                                              datetime=value['timestamp'],
-                                              altitude=value['altitude'],
-                                              icao24=value['icao24']))
+                                              datetime=entry['timestamp'],
+                                              altitude=entry['altitude'],
+                                              icao24=entry['icao24']))
 
             if plot:
                 # Set the bounding box for our area of interest
