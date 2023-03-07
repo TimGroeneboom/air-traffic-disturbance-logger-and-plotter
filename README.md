@@ -50,11 +50,9 @@ options:
 
 ## disturbancecheck.py
 
-disturbancecheck is a script that runs once, it gets all the registered complainers with their parameters and checks if any periods of disturbances have  occured within a certain timespan on their geographic location and disturbance parameters.
+disturbancecheck is a script that runs once and checks if any periods of disturbance have happened within set timespan.
 
-If a disturbance is registered, it tries to create a trajectory of all callsigns that have been found flying over complainants area. It then produces an output image like this
-
-In the future, disturbance period information could automatically be sent to organizations responsible for collection aircraft noise complaints
+If a disturbance is registered, it tries to create a trajectory of all callsigns that have been found flying over given area. It then produces an output image like this
 
 ![This is an image](disturbance_example.jpg)
 
