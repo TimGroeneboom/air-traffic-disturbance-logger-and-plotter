@@ -94,3 +94,9 @@ class DataclassJSONEncoder(json.JSONEncoder):
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
         return super().default(o)
+
+
+def xstr(s):
+    if s is None:
+        return ''
+    return str(s)
