@@ -22,21 +22,21 @@ class Scheduler:
 
         # Create database handler
         self.database_handler = DatabaseCollectionHandler(self.environment)
-        self.scheduler.add_job(func=self.remove_entries_job, trigger='interval', days=1)
-        self.remove_entries_job()
+        self.scheduler.add_job(func=self._remove_entries_job, trigger='interval', days=1)
+        self._remove_entries_job()
 
         # Create plane logger
-        self.plane_logger = PlaneLogger(self.environment)
         if environment.PLANELOGGER_ENABLE:
-            self.scheduler.add_job(func=self.log_planes, trigger='interval', seconds=environment.LOG_INTERVAL_SECONDS)
+            self.plane_logger = PlaneLogger(self.environment)
+            self.scheduler.add_job(func=self._log_planes, trigger='interval', seconds=environment.LOG_INTERVAL_SECONDS)
 
         # Start scheduler
         self.scheduler.start()
 
-    def remove_entries_job(self):
+    def _remove_entries_job(self):
         self.database_handler.remove_entries_older_than(datetime.now() - timedelta(days=environment.STATES_RETENTION_DAYS))
 
-    def log_planes(self):
+    def _log_planes(self):
         self.plane_logger.log(environment.PLANELOGGER_BBOX)
 
 
