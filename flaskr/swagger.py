@@ -5,7 +5,7 @@ from flask import request
 swagger_template = dict(
     info= {
         'title': LazyString(lambda: 'Air Traffic Disturbance Logger & Plotter'),
-        'version': LazyString(lambda: '1.0'),
+        'version': LazyString(lambda: '1.0.1'),
         'description': LazyString(lambda: 'This document describes the Air Traffic Disturbance Logger & Plotter REST API'),
     },
     host=LazyString(lambda: request.host)
