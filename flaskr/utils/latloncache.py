@@ -37,7 +37,7 @@ class LatLonCache:
         """
         if self.collection.count_documents(***REMOVED***'address': ***REMOVED***"$in": [address]***REMOVED******REMOVED***) > 0:
             entry = self.collection.find_one(***REMOVED***'address': address***REMOVED***)
-            if 'lat' in entry and 'lon' in entry and 'timetamp' in entry:
+            if 'lat' in entry and 'lon' in entry and 'timestamp' in entry:
                 timestamp: datetime = convert_int_to_datetime(entry['timestamp'])
                 if datetime.datetime.now() - timestamp > datetime.timedelta(days=self.expire_days):
                     return False
