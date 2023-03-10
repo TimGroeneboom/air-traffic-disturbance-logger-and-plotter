@@ -24,6 +24,11 @@ class DatabaseCollectionHandler:
         timestamp_int = convert_datetime_to_int(timestamp)
         self.collection.delete_many({'Time': {'$lte': timestamp_int}})
 
+    def remove_entries_newer_than(self, timestamp: datetime):
+        logging.info('Deleting states from collection after %s' % timestamp.__str__())
+        timestamp_int = convert_datetime_to_int(timestamp)
+        self.collection.delete_many({'Time': {'$gte': timestamp_int}})
+
     def add_property_to_all_states(self, property_name: str, default_value):
         cursor = self.collection.find({}).allow_disk_use(True)
         for doc in cursor:
