@@ -56,10 +56,12 @@ class PlaneLogger:
                 return
 
             # Create states list with interesting data and store list in mongo db with timestamp as key value
-            logging.info(self.prepare_log('Storing %i states in database' % len(state_collection.states)))
             time = state_collection.time
-            key = convert_datetime_to_int(datetime.datetime.fromtimestamp(time))
+            timestamp = datetime.datetime.fromtimestamp(time)
+            logging.info(self.prepare_log('Timestamp of obtained states : %s' % timestamp.__str__()))
+            key = convert_datetime_to_int(timestamp)
 
+            logging.info(self.prepare_log('Storing %i states in database' % len(state_collection.states)))
             db_states = self.mongo_client[self.environment.mongodb_config.database][
                 self.environment.mongodb_config.collection]
             states = []
