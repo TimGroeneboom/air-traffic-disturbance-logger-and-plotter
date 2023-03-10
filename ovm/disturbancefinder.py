@@ -122,39 +122,67 @@ class DisturbanceFinder:
 
                             # Get timestamp
                             timestamp_int = document['Time']
-                            items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(6)
-                            items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
-                                [('Time', pymongo.DESCENDING)]).limit(6)
-                            dictionary = ***REMOVED******REMOVED***
 
-                            # Get 4 states before and after current timestamp
+                            # Limit results to cap trajectory, if interval is set to 22 seconds,
+                            # a limit of 15 will be +- 5 minutes, which should be more than enough
+                            items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(15)
+                            items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort([('Time', pymongo.DESCENDING)]).limit(15)
+
+                            # coordinates will be stored here
+                            coords: list = []
+
+                            # First iterate over the past, insert coordinates
                             for doc in items_before:
                                 timestamp_int = doc['Time']
-                                if timestamp_int not in dictionary.keys():
-                                    dictionary[timestamp_int] = doc['States']
-                            for doc in items_after:
-                                timestamp_int = doc['Time']
-                                if timestamp_int not in dictionary.keys():
-                                    dictionary[timestamp_int] = doc['States']
-                            ordered_dict = collections.OrderedDict(sorted(dictionary.items()))
-
-                            # Obtain coordinates of the callsign in the found timestamps
-                            for key, value in ordered_dict.items():
-                                for other_state in value:
-                                    if utils.remove_whitespace(other_state['callsign']) == callsign:
-                                        new_altitude = other_state['geo_altitude']
+                                older_states = doc['States']
+                                trajectory_complete = False
+                                callsign_found_in_states = False
+                                for older_state in older_states:
+                                    if utils.remove_whitespace(older_state['callsign']) == callsign:
+                                        new_altitude = older_state['geo_altitude']
                                         if new_altitude is not None:
                                             # Obtain lat lon from location to compute distance from complainant origin
-                                            new_coord = (other_state['latitude'], other_state['longitude'])
-                                            distance = geopy.distance.great_circle(origin, new_coord)
-                                            if distance < radius * 2:
-                                                trajectories[callsign].average_altitude += new_altitude
-                                                trajectories[callsign].coords.append((new_coord[1], new_coord[0]))
+                                            old_coord = (older_state['latitude'], older_state['longitude'])
+                                            distance = geopy.distance.great_circle(origin, old_coord).meters
+                                            coords.insert(0, (old_coord[1], old_coord[0]))
+                                            trajectories[callsign].average_altitude += new_altitude
+                                            if distance > radius * 2:
+                                                trajectory_complete = True
+                                        callsign_found_in_states = True
+
+                                # Callsign not preset or distance is outside radius, finish
+                                if trajectory_complete or callsign_found_in_states is False:
+                                    break
+
+                            # Iterate over the future, append coordinates
+                            for doc in items_after:
+                                timestamp_int = doc['Time']
+                                newer_states = doc['States']
+                                trajectory_complete = False
+                                callsign_found_in_states = False
+                                for newer_state in newer_states:
+                                    if utils.remove_whitespace(newer_state['callsign']) == callsign:
+                                        new_altitude = newer_state['geo_altitude']
+                                        if new_altitude is not None:
+                                            # Obtain lat lon from location to compute distance from complainant origin
+                                            new_coord = (newer_state['latitude'], newer_state['longitude'])
+                                            distance = geopy.distance.great_circle(origin, new_coord).meters
+                                            coords.append((new_coord[1], new_coord[0]))
+                                            trajectories[callsign].average_altitude += new_altitude
+                                            if distance > radius * 2:
+                                                trajectory_complete = True
+                                        callsign_found_in_states = True
+
+                                # Callsign not preset or distance is outside radius, finish
+                                if trajectory_complete or callsign_found_in_states is False:
+                                    break
 
                             # Calculate
-                            coord_num = len(trajectories[callsign].coords)
+                            coord_num = len(coords)
+                            trajectories[callsign].coords = coords
                             if coord_num > 0:
                                 trajectories[callsign].average_altitude /= len(trajectories[callsign].coords)
+
 
         if plot:
             # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
@@ -350,38 +378,78 @@ class DisturbanceFinder:
                 logging.info(
                     'Collecting trajectories for %i flights' % (len(disturbance_period.disturbances.items())))
                 for callsign, entry in disturbance_period.disturbances.items():
-                    # Gather states before and after this entry to plot a trajectory for callsign
-                    dictionary = ***REMOVED******REMOVED***
-                    datetime_int = entry['timestamp']
-                    items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': datetime_int***REMOVED******REMOVED***).limit(6)
-                    items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': datetime_int***REMOVED******REMOVED***).sort(
-                        [('Time', pymongo.DESCENDING)]).limit(6)
-                    for doc in items_before:
-                        timestamp_int = doc['Time']
-                        if timestamp_int not in dictionary.keys():
-                            dictionary[timestamp_int] = doc['States']
-                    for doc in items_after:
-                        timestamp_int = doc['Time']
-                        if timestamp_int not in dictionary.keys():
-                            dictionary[timestamp_int] = doc['States']
-
-                    # Order found states and create the trajectory of disturbance callsign
                     trajectory: Trajectory = Trajectory()
                     trajectory.callsign = callsign
                     trajectory.average_altitude = 0
-                    ordered_dict = collections.OrderedDict(sorted(dictionary.items()))
-                    for key, value in ordered_dict.items():
-                        for state in value:
-                            if state['callsign'] == callsign:
-                                if state['geo_altitude'] is not None:
-                                    trajectory.coords.append((state['longitude'], state['latitude']))
-                                    trajectory.average_altitude += state['geo_altitude']
+
+                    # Get timestamp
+                    timestamp_int = entry['timestamp']
+
+                    # Limit results to cap trajectory, if interval is set to 22 seconds,
+                    # a limit of 15 will be +- 5 minutes, which should be more than enough
+                    items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(15)
+                    items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
+                        [('Time', pymongo.DESCENDING)]).limit(15)
+
+                    # coordinates will be stored here
+                    coords: list = []
+
+                    # First iterate over the past, insert coordinates
+                    for doc in items_before:
+                        timestamp_int = doc['Time']
+                        older_states = doc['States']
+                        trajectory_complete = False
+                        callsign_found_in_states = False
+                        for older_state in older_states:
+                            if older_state['callsign'] == callsign:
+                                new_altitude = older_state['geo_altitude']
+                                if new_altitude is not None:
+                                    # Obtain lat lon from location to compute distance from complainant origin
+                                    old_coord = (older_state['latitude'], older_state['longitude'])
+                                    distance = geopy.distance.great_circle(origin, old_coord).meters
+                                    coords.insert(0, (old_coord[1], old_coord[0]))
+                                    trajectory.average_altitude += new_altitude
+                                    if distance > radius * 2:
+                                        trajectory_complete = True
+                                callsign_found_in_states = True
+
+                        # Callsign not preset or distance is outside radius, finish
+                        if trajectory_complete or callsign_found_in_states is False:
+                            break
+
+                    # Iterate over the future, append coordinates
+                    for doc in items_after:
+                        timestamp_int = doc['Time']
+                        newer_states = doc['States']
+                        trajectory_complete = False
+                        callsign_found_in_states = False
+                        for newer_state in newer_states:
+                            if newer_state['callsign'] == callsign:
+                                new_altitude = newer_state['geo_altitude']
+                                if new_altitude is not None:
+                                    # Obtain lat lon from location to compute distance from complainant origin
+                                    new_coord = (newer_state['latitude'], newer_state['longitude'])
+                                    distance = geopy.distance.great_circle(origin, new_coord).meters
+                                    coords.append((new_coord[1], new_coord[0]))
+                                    trajectory.average_altitude += new_altitude
+                                    if distance > radius * 2:
+                                        trajectory_complete = True
+                                callsign_found_in_states = True
+
+                        # Callsign not preset or distance is outside radius, finish
+                        if trajectory_complete or callsign_found_in_states is False:
+                            break
+
+                    # Calculate
+                    coord_num = len(coords)
+                    trajectory.coords = coords
+                    if coord_num > 0:
+                        trajectory.average_altitude /= coord_num
 
                     # Add it to the trajectories of this complaint and store callsign
-                    trajectory.average_altitude /= len(trajectory.coords)
                     disturbance_period.trajectories[callsign] = trajectory
                     callsigns.append(Callsign(callsign=callsign,
-                                              datetime=datetime_int,
+                                              datetime=timestamp_int,
                                               altitude=trajectory.average_altitude,
                                               icao24=entry['icao24']))
             else:
