@@ -47,41 +47,43 @@ class PlaneLogger:
         @param plot_options: plot options
         """
 
-        # Obtain current states
-        logging.info(self.prepare_log('Obtaining states from opensky network'))
-        state_collection = self.opensky_api.get_states(bbox=bbox)
-        if state_collection is None:
-            logging.error(self.prepare_log('Failed to obtain states from opensky'))
-            return
+        try:
+            # Obtain current states
+            logging.info(self.prepare_log('Obtaining states from opensky network'))
+            state_collection = self.opensky_api.get_states(bbox=bbox)
+            if state_collection is None:
+                logging.error(self.prepare_log('Failed to obtain states from opensky'))
+                return
 
-        # Create states list with interesting data and store list in mongo db with timestamp as key value
-        logging.info(self.prepare_log('Storing %i states in database' % len(state_collection.states)))
-        key = convert_datetime_to_int(datetime.datetime.now())
-        db_states = self.mongo_client[self.environment.mongodb_config.database][
-            self.environment.mongodb_config.collection]
-        states = []
-        for state in state_collection.states:
-            state_object = ***REMOVED***
-                "longitude": state.longitude,
-                "latitude": state.latitude,
-                "callsign": state.callsign,
-                "geo_altitude": state.geo_altitude,
-                "icao24": state.icao24
-          ***REMOVED***
-            states.append(state_object)
-        result = db_states.insert_one(***REMOVED***
-            'Time': key,
-            'States': states
-      ***REMOVED***)
+            # Create states list with interesting data and store list in mongo db with timestamp as key value
+            logging.info(self.prepare_log('Storing %i states in database' % len(state_collection.states)))
+            time = state_collection.time
+            key = convert_datetime_to_int(datetime.datetime.fromtimestamp(time))
 
-        # Plot if necessary
-        if plot_options is not None and plot_options.plot:
-            logging.info(self.prepare_log('Creating plot'))
-            img = plot_states(states,
-                              bbox=bbox,
-                              tile_zoom=plot_options.tilezoom)
+            db_states = self.mongo_client[self.environment.mongodb_config.database][
+                self.environment.mongodb_config.collection]
+            states = []
+            for state in state_collection.states:
+                state_object = ***REMOVED***
+                    "longitude": state.longitude,
+                    "latitude": state.latitude,
+                    "callsign": state.callsign,
+                    "geo_altitude": state.geo_altitude,
+                    "icao24": state.icao24
+              ***REMOVED***
+                states.append(state_object)
+            result = db_states.update_one(***REMOVED***'Time': key***REMOVED***, ***REMOVED***"$set": ***REMOVED***'States': states***REMOVED******REMOVED***, upsert=True)
 
-            # Write image to disk
-            with open(plot_options.filename, 'wb') as fh:
-                fh.write(img)
-                fh.close()
+            # Plot if necessary
+            if plot_options is not None and plot_options.plot:
+                logging.info(self.prepare_log('Creating plot'))
+                img = plot_states(states,
+                                  bbox=bbox,
+                                  tile_zoom=plot_options.tilezoom)
+
+                # Write image to disk
+                with open(plot_options.filename, 'wb') as fh:
+                    fh.write(img)
+                    fh.close()
+        except Exception as ex:
+            logging.exception(ex)
