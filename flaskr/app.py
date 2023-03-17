@@ -6,6 +6,20 @@ from flaskr.testapi import test_api_page
 from flaskr.api import api_page
 from flasgger import Swagger, LazyJSONEncoder
 from flaskr import environment
+import sys, socket
+
+# Set log level
+logging.basicConfig(level=environment.LOGLEVEL)
+
+# Setup scheduler
+try:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(("127.0.0.1", 47200))
+except socket.error:
+    logging.debug("Scheduler already started, do nothing")
+else:
+    from apscheduler.schedulers.background import BackgroundScheduler
+    scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
 
 def create_app():
@@ -13,7 +27,7 @@ def create_app():
     app = Flask(__name__)
 
     # Set log level
-    logging.basicConfig(level=environment.LOGLEVEL)
+    app.logger.setLevel(level=environment.LOGLEVEL)
 
     # Setup json encoder
     app.json_encoder = LazyJSONEncoder
@@ -28,8 +42,10 @@ def create_app():
                       template=swagger_template,
                       config=swagger_config)
 
-    # Setup scheduler
-    scheduler = Scheduler(loglevel=environment.LOGLEVEL)
+    if __name__ != '__main__':
+        gunicorn_logger = logging.getLogger('gunicorn.error')
+        app.logger.handlers = gunicorn_logger.handlers
+        app.logger.setLevel(level=environment.LOGLEVEL)
 
     return app
 
