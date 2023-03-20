@@ -55,13 +55,15 @@ ENV COLLECTION_NAME=$COLLECTION_NAME
 ARG LAT_LON_CACHE_NAME="latloncache"
 ENV LAT_LON_CACHE_NAME=$LAT_LON_CACHE_NAME
 
+RUN mongod --fork --logpath /var/log/mongodb.log && \
+    mongosh $DATABASE_NAME --eval "db.createCollection('$COLLECTION_NAME')" && \
+    mongosh $DATABASE_NAME --eval "db.createCollection('$LAT_LON_CACHE_NAME')"
+
 # Expose ports
 EXPOSE 80
 
 # Run web app
 CMD mongod --fork --logpath /var/log/mongodb.log && \
-    mongosh $DATABASE_NAME --eval "db.createCollection('$COLLECTION_NAME')" && \
-    mongosh $DATABASE_NAME --eval "db.createCollection('$LAT_LON_CACHE_NAME')" && \
     service nginx start && \
     gunicorn -b 0.0.0.0:$PORT wsgi:application -w \
     "$(if [ $WORKERS = 0 ] ; then echo $(grep -c ^processor /proc/cpuinfo) ; else echo '$WORKERS'; fi)"
