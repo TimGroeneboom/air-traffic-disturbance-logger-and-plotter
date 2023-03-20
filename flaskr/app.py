@@ -11,7 +11,8 @@ import sys, socket
 # Set log level
 logging.basicConfig(level=environment.LOGLEVEL)
 
-# Setup scheduler
+# Setup scheduler, bind a socket to a port to setup one scheduler for each worker thread
+# spawned by gunicorn
 try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", 47200))
