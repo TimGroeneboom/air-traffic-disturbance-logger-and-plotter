@@ -22,7 +22,6 @@ else:
     from apscheduler.schedulers.background import BackgroundScheduler
     scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
-
 def create_app():
     # Create app
     app = Flask(__name__)
