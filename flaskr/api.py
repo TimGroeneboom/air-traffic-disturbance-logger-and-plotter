@@ -5,7 +5,6 @@ import requests
 from flasgger import swag_from
 from flask import Blueprint, request
 import flaskr.environment
-from flaskr.utils.jobqueue import JobQueue
 from flaskr.utils.latloncache import LatLonCache
 from ovm.disturbancefinder import DisturbanceFinder
 from ovm.environment import load_environment
@@ -16,10 +15,6 @@ api_page = Blueprint('api', __name__, template_folder='templates')
 
 # Load environment
 environment = load_environment('environment.json')
-
-# Create job queue
-queue = JobQueue(processes=flaskr.environment.MAX_WORKERS,
-                 max_size=flaskr.environment.MAX_SIZE_JOB_QUEUE)
 
 # Get latlon cache
 latlon_cache = LatLonCache(environment=environment,
@@ -170,20 +165,8 @@ def execute(function, args):
 
     # Try and execute the API call and fill response object
     try:
-        # Queue a new task
-        job = queue.queue(task, function, args)
-
-        # Wait for the job to finish
-        while job.is_finished() is False:
-            pass
-
-        if job.success():
-            # At this point we can assume the data is valid
-            result = job.result()
-            response['value'] = result
-            response['status'] = 'OK'
-        else:
-            raise Exception(job.result())
+        response['value'] = task(function, args)
+        response['status'] = 'OK'
     except Exception as e:
         response['value'] = e.__str__()
         response['status'] = 'ERROR'
