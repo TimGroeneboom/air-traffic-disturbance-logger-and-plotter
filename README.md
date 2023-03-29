@@ -158,7 +158,7 @@ The repositoy contain a [Dockerfile](Dockerfile) that creates a container that r
 
 To create the Docker container do the following
 
-- Make sure all settings are correctly in the [Environment.json](environment.json) and [environment.py](flaskr/environment.py).
+- Make sure all settings are correct in the [Environment.json](environment.json) and [environment.py](flaskr/environment.py).
 - Run the [build_docker.sh](build_docker.sh) script
 - Create a container and run the created Docker image using the following command, replace <CONTAINER_NAME> with a name of your liking
   - ```docker run -p 80:80 --name <CONTAINER_NAME> air-traffice-logger-and-plotter:latest```
