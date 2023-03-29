@@ -144,7 +144,6 @@ def find_flights_process(shared_queue, args):
 def execute(function, args):
     """
     All api calls get executed by this function
-    Queues task in a job queue and waits for it to finish
     Returns response object in json on success
     ***REMOVED***
         status: 'OK',
