@@ -7,7 +7,7 @@ Disturbance checking and plotting is done using the [disturbance finder script](
 
 Also, this project contains a Flask app that combines logging and plotting and serves the air traffic data using a REST API. See [Setup Flask App](#setup-flask-app) for instructions.
 
-The project contains a [Dockerfile](Dockerfile) that serves the app using Ubuntu 22.04, python 3.10, gunicorn and nginx using a reverse proxy. See [Deployment & Docker](#deployment-&-docker)
+The project contains a [Dockerfile](Dockerfile) that serves the app using Ubuntu 22.04, python 3.10, gunicorn and nginx using a reverse proxy. See [Deployment & Docker](#deployment--docker)
 
 This project was developed, deployed and tested on Ubuntu 22.04 and Python 3.10
 
