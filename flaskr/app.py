@@ -11,20 +11,20 @@ import sys, socket
 # Set log level
 logging.basicConfig(level=environment.LOGLEVEL)
 
-# Setup scheduler, bind a socket to a port to setup one scheduler for each worker thread
-# spawned by gunicorn
-try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(("127.0.0.1", 47200))
-except socket.error:
-    logging.debug("Scheduler already started, do nothing")
-else:
-    from apscheduler.schedulers.background import BackgroundScheduler
-    scheduler = Scheduler(loglevel=environment.LOGLEVEL)
-
 def create_app():
     # Create app
     app = Flask(__name__)
+
+    # Setup scheduler, bind a socket to a port to setup one scheduler for each worker thread
+    # spawned by gunicorn
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 47200))
+    except socket.error:
+        logging.debug("Scheduler already started, do nothing")
+    else:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
     # Set log level
     app.logger.setLevel(level=environment.LOGLEVEL)

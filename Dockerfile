@@ -69,4 +69,4 @@ EXPOSE 80
 CMD mongod --fork --logpath /var/log/mongodb.log && \
     service nginx start && \
     gunicorn -b 0.0.0.0:$PORT wsgi:application -w \
-    "$(if [ $WORKERS = 0 ] ; then echo $(($(grep -c ^processor /proc/cpuinfo)*2)) ; else echo '$WORKERS'; fi)"
+    "$(if [ $WORKERS = 0 ] ; then echo $(($(grep -c ^processor /proc/cpuinfo)*2+1)) ; else echo '$WORKERS'; fi)"
