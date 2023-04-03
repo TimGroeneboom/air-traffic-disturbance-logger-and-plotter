@@ -16,8 +16,7 @@ See : https://matplotlib.org/stable/users/explain/backends.html
 """
 matplotlib.use('agg')
 
-def plot_trajectories(title: str,
-                      origin: tuple,
+def plot_trajectories(origin: tuple,
                       begin: datetime,
                       end: datetime,
                       trajectories: dict,
@@ -97,8 +96,8 @@ def plot_trajectories(title: str,
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     ax.text(0.05, 0.10,
-            '%s\nlocation: [%f, %f]\nperiod: [%s, %s]\nflights: %i\naverage altitude: %im' %
-            (title, origin[0], origin[1], begin.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S"),
+            'location: [%f, %f]\nperiod: [%s, %s]\nflights: %i\naverage altitude: %im' %
+            (origin[0], origin[1], begin.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S"),
              len(trajectories.items()), average_altitude),
             verticalalignment='bottom', horizontalalignment='left',
             transform=ax.transAxes,
