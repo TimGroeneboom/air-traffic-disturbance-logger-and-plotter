@@ -2,7 +2,7 @@
 
 # Install python3, ubuntu and mongo
 FROM python:3.10-slim-buster
-FROM ubuntu:latest
+FROM ubuntu:22.04
 FROM mongo:latest
 
 # Update aptitude with new repo

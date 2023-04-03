@@ -161,6 +161,6 @@ To create the Docker container do the following
 - Make sure all settings are correct in the [Environment.json](environment.json) and [environment.py](flaskr/environment.py).
 - Run the [build_docker.sh](build_docker.sh) script
 - Create a container and run the created Docker image using the following command, replace <CONTAINER_NAME> with a name of your liking
-  - ```docker run -p 80:80 --name <CONTAINER_NAME> air-traffice-logger-and-plotter:latest```
+  - ```docker run -p 80:80 --name <CONTAINER_NAME> air-traffic-logger-and-plotter:latest```
 - Optionally, save the created container using the following command, replace <FILE_NAME> with a name of your choosing
   - ```docker save <CONTAINER_NAME> > <FILE_NAME>.tar```

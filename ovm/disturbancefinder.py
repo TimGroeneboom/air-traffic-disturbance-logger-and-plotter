@@ -192,7 +192,6 @@ class DisturbanceFinder:
             # Make plot of all callsign trajectories
             logging.info('Generating trajectory plot')
             image = plot_trajectories(bbox=bbox,
-                                      title=title,
                                       origin=origin,
                                       begin=begin,
                                       end=end,
@@ -468,7 +467,6 @@ class DisturbanceFinder:
                 disturbance_period.plot = plot_trajectories(bbox=bbox,
                                                             trajectories=disturbance_period.trajectories,
                                                             origin=origin,
-                                                            title=title,
                                                             begin=disturbance_period.begin,
                                                             end=disturbance_period.end,
                                                             tile_zoom=zoomlevel)
