@@ -12,8 +12,7 @@ RUN apt-get update
 RUN apt-get install -y git
 
 # Set port as environment variable
-ARG PORT=5000
-ENV PORT=$PORT
+ENV PORT=5000
 
 # Set amount of workers
 ARG WORKERS=0

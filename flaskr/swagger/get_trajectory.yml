@@ -1,0 +1,38 @@
+openapi: 3.0.0
+
+tags:
+  - name: Get trajectory
+
+description: "Returns a coordinate list of flight trajectory of given callsign around timestamp. 
+Duration is amount of minutes around the timespan we would like to have the coordinates."
+
+get:
+  parameters:
+      - in: query
+        name: callsign
+        schema:
+          type: string
+          default: klm01
+        required: true
+        description: Callsign
+      - in: query
+        name: timestamp
+        required: true
+        description: Beginning timestamp in YYYYMMDDHHMMSS format
+        schema:
+          type: integer
+      - in: query
+        name: duration
+        schema:
+          type: integer
+          default: 60
+        required: true
+        description: Duration in minutes
+
+responses:
+  '200':
+    description: Successful response
+  '400':
+    description: Bad Request
+  '500':
+    description: Internal Server Error

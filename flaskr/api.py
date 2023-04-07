@@ -43,6 +43,17 @@ def find_flights_api():
                    args=request.args)
 
 
+@swag_from('swagger/get_trajectory.yml', methods=['GET'])
+@api_page.route('/api/get_trajectory')
+def get_trajectory_api():
+    """
+    The get_trajectory API call
+    :return: response data
+    """
+    return execute(function=get_trajectory_process,
+                   args=request.args)
+
+
 def find_disturbances_process(shared_queue, args):
     """
     Process of finding disturbances, exits on error or completion
@@ -135,6 +146,32 @@ def find_flights_process(shared_queue, args):
                                                   plot=plot,
                                                   zoomlevel=zoomlevel).disturbances
         shared_queue.put(flights)
+        exit(0)
+    except Exception as ex:
+        shared_queue.put(ex.__str__())
+        exit(1)
+
+
+def get_trajectory_process(shared_queue, args):
+    """
+    Process of finding trajectories of flights, exits on error or completion
+    :param shared_queue: the shared_queue where data will be put
+    :param args: arguments
+    """
+    try:
+        # Get input
+        callsign = str(args['callsign'])
+        timestamp = int(args['timestamp'])
+        duration = int(args['duration'])
+
+        # Get timestamp datetime
+        timestamp_dt = convert_int_to_datetime(timestamp)
+
+        disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
+        coords = disturbance_finder.get_trajectory(callsign=callsign,
+                                                   timestamp=timestamp_dt,
+                                                   duration=duration)
+        shared_queue.put(coords)
         exit(0)
     except Exception as ex:
         shared_queue.put(ex.__str__())

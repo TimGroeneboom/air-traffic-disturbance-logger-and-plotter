@@ -3,7 +3,7 @@ import collections
 import logging
 import operator
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 import geopy.distance
 import pymongo
 from pymongo import MongoClient
@@ -31,6 +31,62 @@ class DisturbanceFinder:
         # Create MongoDB client
         self.mongo_client = MongoClient(environment.mongodb_config.host,
                                         environment.mongodb_config.port)
+
+    def get_trajectory(self,
+                       callsign: str,
+                       timestamp: datetime,
+                       duration: int):
+        """
+        Returns a list of coordinates of the flight path of given callsign around timestamp. Period is determined by
+        duration around timestamp. Meaning a duration of 60 means beginning of period of trajectory = timestamp - duration / 2
+        and end of period of trajectory = timestamp + duration / 2
+        """
+
+        # Get the collection of states from the mongo db
+        # A state holds all plane information (callsign, location, altitude, etc..) on a specific timestamp
+        # The time is the key value of a state and is ordered accordingly in the mongo database
+        # Time is an int64 holding the timestamp in the following format %Y%m%d%H%M%S
+        states_collection = self.mongo_client[self.environment.mongodb_config.database][
+                self.environment.mongodb_config.collection]
+
+        callsign = utils.remove_whitespace(callsign)
+        begin = timestamp - timedelta(minutes=duration / 2)
+        end = timestamp + timedelta(minutes=duration / 2)
+        cursor = states_collection.find({'Time': {'$gte': convert_datetime_to_int(begin)}})
+
+        coords = []
+
+        # Iterate through states
+        for document in cursor:
+            # Get timestamp as integer value and as datetime object
+            timestamp_int = document['Time']
+            new_timestamp = utils.convert_int_to_datetime(timestamp_int)
+
+            # bail if timestamp exceeded end
+            if new_timestamp > end:
+                break
+
+            # Get all states
+            states = document['States']
+
+            # Iterate through states
+            for state in states:
+                # Get callsign
+                found_callsign = utils.remove_whitespace(state['callsign'])
+
+                if callsign == found_callsign:
+                    # Obtain altitude
+                    geo_altitude = state['geo_altitude']
+
+                    # Ignore grounded planes
+                    if geo_altitude is None:
+                        continue
+
+                    # obtain flight coordinate
+                    flight_coord = (state['latitude'], state['longitude'])
+                    coords.append(flight_coord)
+
+        return coords
 
     def find_flights(self,
                      origin: tuple,
@@ -126,7 +182,8 @@ class DisturbanceFinder:
                             # Limit results to cap trajectory, if interval is set to 22 seconds,
                             # a limit of 15 will be +- 5 minutes, which should be more than enough
                             items_after = states_collection.find({'Time': {'$gte': timestamp_int}}).limit(15)
-                            items_before = states_collection.find({'Time': {'$lte': timestamp_int}}).sort([('Time', pymongo.DESCENDING)]).limit(15)
+                            items_before = states_collection.find({'Time': {'$lte': timestamp_int}}).sort(
+                                [('Time', pymongo.DESCENDING)]).limit(15)
 
                             # coordinates will be stored here
                             coords: list = []
@@ -183,7 +240,6 @@ class DisturbanceFinder:
                             if coord_num > 0:
                                 trajectories[callsign].average_altitude /= len(trajectories[callsign].coords)
 
-
         if plot:
             # Set the bounding box for our area of interest, add an extra meters/padding for a better view of
             # trajectories
@@ -223,7 +279,8 @@ class DisturbanceFinder:
         # A state holds all plane information (callsign, location, altitude, etc..) on a specific timestamp
         # The time is the key value of a state and is ordered accordingly in the mongo database
         # Time is an int64 holding the timestamp in the following format %Y%m%d%H%M%S
-        states_collection = self.mongo_client[self.environment.mongodb_config.database][self.environment.mongodb_config.collection]
+        states_collection = self.mongo_client[self.environment.mongodb_config.database][
+            self.environment.mongodb_config.collection]
         cursor = states_collection.find({'Time': {'$gte': convert_datetime_to_int(begin)}})
 
         #
@@ -316,9 +373,9 @@ class DisturbanceFinder:
 
                         # if callsign is not already logged for this disturbance, do it now
                         if callsign not in disturbances.keys():
-                            disturbances[callsign] = { 'timestamp': timestamp_int,
-                                                       'altitude': geo_altitude,
-                                                       'icao24': icao24}
+                            disturbances[callsign] = {'timestamp': timestamp_int,
+                                                      'altitude': geo_altitude,
+                                                      'icao24': icao24}
 
             # Check if disturbance has ended and if we need to generate a complaint within set parameters
             if not disturbance_in_this_timestamp:
