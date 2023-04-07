@@ -19,7 +19,7 @@ def find_disturbances():
         try:
             d = request.form
             user = d['user']
-            url = 'http://%s/api/find_disturbances?' \
+            url = '%sapi/find_disturbances?' \
                   'user=%s&' \
                   '%s&' \
                   'radius=%i&' \
@@ -30,7 +30,7 @@ def find_disturbances():
                   'end=%i&' \
                   'plot=%i&' \
                   'zoomlevel=%i' % \
-                  (request.host,
+                  (request.root_url,
                    d['user'],
                    get_lat_lon_or_postal_streetnumber(d),
                    int(d['radius']), int(d['altitude']),
@@ -40,7 +40,7 @@ def find_disturbances():
                    convert_datetime_to_int(datetime.strptime(d['end'], '%Y-%m-%dT%H:%M')),
                    int('plot' in d),
                    int(d['zoomlevel']))
-            disturbances = handle_response(requests.get(url))
+            disturbances = handle_response(requests.get(url, verify=False))
 
             render_disturbances = []
             for disturbance in disturbances:
@@ -87,7 +87,7 @@ def find_flights():
             d = request.form
             user = d['user']
 
-            url = 'http://%s/api/find_flights?' \
+            url = '%sapi/find_flights?' \
                   'user=%s&' \
                   '%s&' \
                   'radius=%i&' \
@@ -96,7 +96,7 @@ def find_flights():
                   'end=%i&' \
                   'plot=%i&' \
                   'zoomlevel=%i' % \
-                  (request.host,
+                  (request.root_url,
                    user,
                    get_lat_lon_or_postal_streetnumber(d),
                    int(d['radius']),
@@ -106,7 +106,7 @@ def find_flights():
                    int('plot' in d),
                    int(d['zoomlevel']))
 
-            flights = handle_response(requests.get(url))
+            flights = handle_response(requests.get(url, verify=False))
 
             render_disturbances = []
             for disturbance in flights:
