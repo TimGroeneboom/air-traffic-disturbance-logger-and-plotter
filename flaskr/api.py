@@ -4,6 +4,8 @@ from multiprocessing import Process
 import requests
 from flasgger import swag_from
 from flask import Blueprint, request
+from flask_cors import cross_origin
+
 import flaskr.environment
 from flaskr.utils.latloncache import LatLonCache
 from ovm.disturbancefinder import DisturbanceFinder
@@ -23,6 +25,7 @@ latlon_cache = LatLonCache(environment=environment,
 
 @swag_from('swagger/find_disturbances.yml', methods=['GET'])
 @api_page.route('/api/find_disturbances')
+@cross_origin()
 def find_disturbances_api():
     """
     The find_disturbances API call
@@ -34,6 +37,7 @@ def find_disturbances_api():
 
 @swag_from('swagger/find_flights.yml', methods=['GET'])
 @api_page.route('/api/find_flights')
+@cross_origin()
 def find_flights_api():
     """
     The find_flights API call
@@ -45,6 +49,7 @@ def find_flights_api():
 
 @swag_from('swagger/get_trajectory.yml', methods=['GET'])
 @api_page.route('/api/get_trajectory')
+@cross_origin()
 def get_trajectory_api():
     """
     The get_trajectory API call

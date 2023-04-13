@@ -1,5 +1,7 @@
 import logging
 from flask import Flask
+from flask_cors import CORS
+
 from flaskr.scheduler import Scheduler
 from flaskr.swagger import swagger_template, swagger_config
 from flaskr.testapi import test_api_page
@@ -46,6 +48,10 @@ def create_app():
         gunicorn_logger = logging.getLogger('gunicorn.error')
         app.logger.handlers = gunicorn_logger.handlers
         app.logger.setLevel(level=environment.LOGLEVEL)
+
+    # Enable CORS
+    cors = CORS(app)
+    app.config['CORS_HEADERS'] = 'Content-Type'
 
     return app
 
