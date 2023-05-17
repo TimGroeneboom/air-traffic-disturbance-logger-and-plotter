@@ -9,6 +9,9 @@ from ovm.planelogger import PlaneLogger
 
 
 class Scheduler:
+    """
+    The scheduler is responsible for executing background tasks
+    """
     def __init__(self, loglevel):
         # Create the background scheduler
         self.scheduler = BackgroundScheduler()

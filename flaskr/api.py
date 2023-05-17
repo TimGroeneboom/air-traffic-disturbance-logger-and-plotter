@@ -6,7 +6,7 @@ from flasgger import swag_from
 from flask import Blueprint, request
 import flaskr.environment
 from flaskr.utils.latloncache import LatLonCache
-from ovm.disturbancefinder import DisturbanceFinder
+from ovm.flightinfofinder import FlightInfoFinder
 from ovm.environment import load_environment
 from ovm.utils import convert_int_to_datetime
 
@@ -65,7 +65,6 @@ def find_disturbances_process(shared_queue, args):
         modified_args = process_input(args, extra_args=['occurrences', 'timeframe'])
 
         # Get input
-        user = modified_args['user']
         lat = float(modified_args['lat'])
         lon = float(modified_args['lon'])
         radius = int(modified_args['radius'])
@@ -85,12 +84,11 @@ def find_disturbances_process(shared_queue, args):
         begin_dt = convert_int_to_datetime(begin)
         end_dt = convert_int_to_datetime(end)
 
-        disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
+        disturbance_finder: FlightInfoFinder = FlightInfoFinder(environment)
         disturbances = disturbance_finder.find_disturbances(begin=begin_dt,
                                                             end=end_dt,
                                                             zoomlevel=zoomlevel,
                                                             plot=plot,
-                                                            title=user,
                                                             origin=(lat, lon),
                                                             radius=radius,
                                                             altitude=altitude,
@@ -116,7 +114,6 @@ def find_flights_process(shared_queue, args):
         modified_args = process_input(args)
 
         # Get input
-        user = modified_args['user']
         lat = float(modified_args['lat'])
         lon = float(modified_args['lon'])
         radius = int(modified_args['radius'])
@@ -136,13 +133,12 @@ def find_flights_process(shared_queue, args):
         begin_dt = convert_int_to_datetime(begin)
         end_dt = convert_int_to_datetime(end)
 
-        disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
+        disturbance_finder: FlightInfoFinder = FlightInfoFinder(environment)
         flights = disturbance_finder.find_flights(origin=(lat, lon),
                                                   begin=begin_dt,
                                                   end=end_dt,
                                                   radius=radius,
                                                   altitude=altitude,
-                                                  title=user,
                                                   plot=plot,
                                                   zoomlevel=zoomlevel).disturbances
         shared_queue.put(flights)
@@ -167,7 +163,7 @@ def get_trajectory_process(shared_queue, args):
         # Get timestamp datetime
         timestamp_dt = convert_int_to_datetime(timestamp)
 
-        disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
+        disturbance_finder: FlightInfoFinder = FlightInfoFinder(environment)
         coords = disturbance_finder.get_trajectory(callsign=callsign,
                                                    timestamp=timestamp_dt,
                                                    duration=duration)

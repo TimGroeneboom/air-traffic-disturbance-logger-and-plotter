@@ -8,19 +8,16 @@ import geopy.distance
 import pymongo
 from pymongo import MongoClient
 from ovm import utils
-from ovm.disturbanceperiod import DisturbancePeriod, Disturbances, Disturbance, Callsign
+from ovm.disturbanceperiod import DisturbancePeriod, Disturbances, Disturbance, CallsignInfo
 from ovm.environment import Environment
 from ovm.plotter import plot_trajectories
 from ovm.trajectory import Trajectory
 from ovm.utils import convert_datetime_to_int
 
 
-class DisturbanceFinder:
+class FlightInfoFinder:
     """
-    The DisturbanceFinder finds all disturbances that match the complainant parameters (see @Complainant) It connects
-    with the mongo db and iterates through all records found within given begin and end time It generates a
-    Disturbance object (see @Disturbance), containing a plotted graph of all flights encoded as a jpg image alongside
-    some meta-information
+    FlightInfoFinder exposes some methods to query and find flight information from the stored states in the database
     """
 
     # parameterized constructor
@@ -49,11 +46,17 @@ class DisturbanceFinder:
         states_collection = self.mongo_client[self.environment.mongodb_config.database][
                 self.environment.mongodb_config.collection]
 
+        # Sanity check callsign
         callsign = utils.remove_whitespace(callsign)
+
+        # Compute begin and end timestamp
         begin = timestamp - timedelta(minutes=duration / 2)
         end = timestamp + timedelta(minutes=duration / 2)
+
+        # Find the first entry near begin timestamp
         cursor = states_collection.find({'Time': {'$gte': convert_datetime_to_int(begin)}})
 
+        # Holds all coordinates
         coords = []
 
         # Iterate through states
@@ -95,10 +98,10 @@ class DisturbanceFinder:
                      radius: int,
                      altitude: int,
                      plot: bool = False,
-                     title: str = '',
                      zoomlevel: int = 14):
         """
-
+        Finds all flights that flew within a given radius and time period and below a given altitude
+        Returns a single disturbance object containing all flights found
         """
 
         # Create disturbances
@@ -164,10 +167,10 @@ class DisturbanceFinder:
                     # Obtain lat lon from location to compute distance from complainant origin
                     distance = geopy.distance.great_circle(origin, flight_coord).meters
                     if distance < radius:
-                        disturbance.callsigns.append(Callsign(callsign=callsign,
-                                                              datetime=timestamp_int,
-                                                              altitude=geo_altitude,
-                                                              icao24=icao24))
+                        disturbance.callsigns.append(CallsignInfo(callsign=callsign,
+                                                                  datetime=timestamp_int,
+                                                                  altitude=geo_altitude,
+                                                                  icao24=icao24))
 
                         # obtain trajectory if plot is needed
                         if plot:
@@ -272,9 +275,10 @@ class DisturbanceFinder:
                           title: str = '',
                           zoomlevel: int = 14):
         """
-        Finds disturbances whitin given parameters
-        Returns a Disturbances object, holding all disturbances found
+        Finds disturbances within given parameters
+        Returns a list holding all disturbances found
         """
+
         # Get the collection of states from the mongo db
         # A state holds all plane information (callsign, location, altitude, etc..) on a specific timestamp
         # The time is the key value of a state and is ordered accordingly in the mongo database
@@ -504,16 +508,16 @@ class DisturbanceFinder:
 
                     # Add it to the trajectories of this complaint and store callsign
                     disturbance_period.trajectories[callsign] = trajectory
-                    callsigns.append(Callsign(callsign=callsign,
-                                              datetime=timestamp_int,
-                                              altitude=trajectory.average_altitude,
-                                              icao24=entry['icao24']))
+                    callsigns.append(CallsignInfo(callsign=callsign,
+                                                  datetime=timestamp_int,
+                                                  altitude=trajectory.average_altitude,
+                                                  icao24=entry['icao24']))
             else:
                 for callsign, entry in disturbance_period.disturbances.items():
-                    callsigns.append(Callsign(callsign=callsign,
-                                              datetime=entry['timestamp'],
-                                              altitude=entry['altitude'],
-                                              icao24=entry['icao24']))
+                    callsigns.append(CallsignInfo(callsign=callsign,
+                                                  datetime=entry['timestamp'],
+                                                  altitude=entry['altitude'],
+                                                  icao24=entry['icao24']))
 
             if plot:
                 # Set the bounding box for our area of interest

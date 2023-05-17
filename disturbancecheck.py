@@ -4,7 +4,7 @@ import base64
 from datetime import datetime, timedelta
 import logging
 from ovm import environment
-from ovm.disturbancefinder import DisturbanceFinder
+from ovm.flightinfofinder import FlightInfoFinder
 
 if __name__ == '__main__':
     # parse cli arguments
@@ -31,12 +31,11 @@ if __name__ == '__main__':
     # Find all disturbances
     user = 'John Doe'
     now = datetime.now()
-    disturbance_finder: DisturbanceFinder = DisturbanceFinder(environment)
+    disturbance_finder: FlightInfoFinder = FlightInfoFinder(environment)
     disturbances = disturbance_finder.find_disturbances(begin=now - timedelta(hours=24),
                                                         end=now,
                                                         zoomlevel=args.zoomlevel,
                                                         plot=args.plot,
-                                                        title=user,
                                                         origin=(52.311502, 4.827680),  # Amsterdamse Bos
                                                         radius=1000,
                                                         altitude=1000,

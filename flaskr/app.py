@@ -11,6 +11,7 @@ import sys, socket
 # Set log level
 logging.basicConfig(level=environment.LOGLEVEL)
 
+
 def create_app():
     # Create app
     app = Flask(__name__)
@@ -24,7 +25,7 @@ def create_app():
         logging.debug("Scheduler already started, do nothing")
     else:
         from apscheduler.schedulers.background import BackgroundScheduler
-        scheduler = Scheduler(loglevel=environment.LOGLEVEL)
+        app.scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
     # Set log level
     app.logger.setLevel(level=environment.LOGLEVEL)
@@ -38,9 +39,9 @@ def create_app():
         app.register_blueprint(test_api_page)
 
     # Setup swagger
-    swagger = Swagger(app,
-                      template=swagger_template,
-                      config=swagger_config)
+    app.swagger = Swagger(app,
+                          template=swagger_template,
+                          config=swagger_config)
 
     if __name__ != '__main__':
         gunicorn_logger = logging.getLogger('gunicorn.error')
@@ -53,4 +54,3 @@ def create_app():
 # Fire up app from cli
 if __name__ == '__main__':
     create_app().run()
-

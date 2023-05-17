@@ -1,7 +1,7 @@
 {
   "opensky_credentials" : {
-    "username" : "<USER>",
-    "password" : "<PASS>"
+    "username" : "WiijTimski",
+    "password" : "W1r3l3ssf1r3w1r3!"
   },
   "mongodb_config" : {
       "host": "127.0.0.1",

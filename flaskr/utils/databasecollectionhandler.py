@@ -8,6 +8,9 @@ from ovm.utils import convert_datetime_to_int, convert_int_to_datetime
 
 
 class DatabaseCollectionHandler:
+    """
+    The database handler exposes some utility methods to modify a collection in a mongo database
+    """
     def __init__(self, environment: Environment):
         # Set environment
         self.environment = environment
