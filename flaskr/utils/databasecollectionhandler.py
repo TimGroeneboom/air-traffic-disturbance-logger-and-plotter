@@ -25,15 +25,15 @@ class DatabaseCollectionHandler:
     def remove_entries_older_than(self, timestamp: datetime):
         logging.info('Deleting states from collection before %s' % timestamp.__str__())
         timestamp_int = convert_datetime_to_int(timestamp)
-        self.collection.delete_many(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***)
+        self.collection.delete_many({'Time': {'$lte': timestamp_int}})
 
     def remove_entries_newer_than(self, timestamp: datetime):
         logging.info('Deleting states from collection after %s' % timestamp.__str__())
         timestamp_int = convert_datetime_to_int(timestamp)
-        self.collection.delete_many(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***)
+        self.collection.delete_many({'Time': {'$gte': timestamp_int}})
 
     def add_property_to_all_states(self, property_name: str, default_value):
-        cursor = self.collection.find(***REMOVED******REMOVED***).allow_disk_use(True)
+        cursor = self.collection.find({}).allow_disk_use(True)
         for doc in cursor:
             # Get all states
             states = doc['States']
@@ -44,7 +44,7 @@ class DatabaseCollectionHandler:
                     state[property_name] = default_value
                     update = True
             if update:
-                self.collection.update_one(***REMOVED***'Time': timestamp***REMOVED***, ***REMOVED***"$set": ***REMOVED***'States': states***REMOVED******REMOVED***)
+                self.collection.update_one({'Time': timestamp}, {"$set": {'States': states}})
 
 
 

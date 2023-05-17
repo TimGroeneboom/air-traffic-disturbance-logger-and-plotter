@@ -6,18 +6,18 @@
 </head>
 <body>
 <h1>Results</h1>
-***REMOVED***% for disturbance in disturbances %***REMOVED***
+{% for disturbance in disturbances %}
 <br>
-***REMOVED******REMOVED*** disturbance.begin ***REMOVED******REMOVED*** - ***REMOVED******REMOVED***disturbance.end***REMOVED******REMOVED***
+{{ disturbance.begin }} - {{disturbance.end}}
 </br>
 <br>
-***REMOVED***% for callsign in disturbance.callsigns %***REMOVED***
-<pre>***REMOVED******REMOVED***callsign***REMOVED******REMOVED***</pre>
-***REMOVED***% endfor %***REMOVED***
+{% for callsign in disturbance.callsigns %}
+<pre>{{callsign}}</pre>
+{% endfor %}
 </br>
-***REMOVED***% if disturbance.plot %***REMOVED***
-<br><img src = "***REMOVED******REMOVED*** url_for('static', filename=disturbance.file)***REMOVED******REMOVED***"></br>
-***REMOVED***% endif %***REMOVED***
-***REMOVED***% endfor %***REMOVED***
+{% if disturbance.plot %}
+<br><img src = "{{ url_for('static', filename=disturbance.file)}}"></br>
+{% endif %}
+{% endfor %}
 </body>
 </html>

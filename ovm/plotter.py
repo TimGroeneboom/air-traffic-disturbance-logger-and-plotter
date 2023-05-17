@@ -47,7 +47,7 @@ def plot_trajectories(origin: tuple,
     # calc average altitude
     average_altitude = 0
     idx = 0
-    linestrings = ***REMOVED******REMOVED***
+    linestrings = {}
     for key, value in trajectories.items():
         if len(value.coords) >= 2:
             linestring: LineString = LineString(value.coords)
@@ -102,7 +102,7 @@ def plot_trajectories(origin: tuple,
             verticalalignment='bottom', horizontalalignment='left',
             transform=ax.transAxes,
             color='black', fontsize=15,
-            bbox=***REMOVED***'facecolor': 'white', 'alpha': 1, 'pad': 10***REMOVED***)
+            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10})
     ax.add_patch(plt.Circle((0.5, 0.5), 0.2, color='red', alpha=1.0))
 
     img: bytes

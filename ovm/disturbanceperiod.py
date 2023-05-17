@@ -69,6 +69,6 @@ class DisturbancePeriod:
         self.end = end
         self.flights = flights
         self.average_altitude = average_altitude
-        self.trajectories = ***REMOVED******REMOVED***
+        self.trajectories = {}
         self.plot = None
 

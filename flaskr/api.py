@@ -190,22 +190,22 @@ def execute(function, args):
     """
     All api calls get executed by this function
     Returns response object in json on success
-    ***REMOVED***
+    {
         status: 'OK',
         value: <string> <-- JSON string
-  ***REMOVED***
+    }
     Returns response object in json on failure
-    ***REMOVED***
+    {
         status: 'ERROR',
         value: <string> <-- failure description
-  ***REMOVED***
+    }
     :param function: function to execute
     :param args: arguments that need to be passed into the function
     :return: response object with status and value
     """
 
     # Create response dict
-    response = ***REMOVED******REMOVED***
+    response = {}
 
     # Try and execute the API call and fill response object
     try:

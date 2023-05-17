@@ -54,7 +54,7 @@ class FlightInfoFinder:
         end = timestamp + timedelta(minutes=duration / 2)
 
         # Find the first entry near begin timestamp
-        cursor = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': convert_datetime_to_int(begin)***REMOVED******REMOVED***)
+        cursor = states_collection.find({'Time': {'$gte': convert_datetime_to_int(begin)}})
 
         # Holds all coordinates
         coords = []
@@ -112,7 +112,7 @@ class FlightInfoFinder:
         disturbance.end = end.strftime("%Y-%m-%d %H:%M:%S")
 
         # Create dictionary of all trajectories
-        trajectories: dict = ***REMOVED******REMOVED***
+        trajectories: dict = {}
 
         # Get the collection of states from the mongo db
         # A state holds all plane information (callsign, location, altitude, etc..) on a specific timestamp
@@ -120,7 +120,7 @@ class FlightInfoFinder:
         # Time is an int64 holding the timestamp in the following format %Y%m%d%H%M%S
         states_collection = self.mongo_client[self.environment.mongodb_config.database][
             self.environment.mongodb_config.collection]
-        cursor = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': convert_datetime_to_int(begin)***REMOVED******REMOVED***)
+        cursor = states_collection.find({'Time': {'$gte': convert_datetime_to_int(begin)}})
 
         # Iterate through states
         for document in cursor:
@@ -184,8 +184,8 @@ class FlightInfoFinder:
 
                             # Limit results to cap trajectory, if interval is set to 22 seconds,
                             # a limit of 15 will be +- 5 minutes, which should be more than enough
-                            items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(15)
-                            items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
+                            items_after = states_collection.find({'Time': {'$gte': timestamp_int}}).limit(15)
+                            items_before = states_collection.find({'Time': {'$lte': timestamp_int}}).sort(
                                 [('Time', pymongo.DESCENDING)]).limit(15)
 
                             # coordinates will be stored here
@@ -285,13 +285,13 @@ class FlightInfoFinder:
         # Time is an int64 holding the timestamp in the following format %Y%m%d%H%M%S
         states_collection = self.mongo_client[self.environment.mongodb_config.database][
             self.environment.mongodb_config.collection]
-        cursor = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': convert_datetime_to_int(begin)***REMOVED******REMOVED***)
+        cursor = states_collection.find({'Time': {'$gte': convert_datetime_to_int(begin)}})
 
         #
         all_found_disturbances = []
 
         # Disturbances is a dictionary with plane callsign as key value and the integer timestamp as value
-        disturbances: dict = ***REMOVED******REMOVED***
+        disturbances: dict = {}
 
         # Array of DisturbancePeriod data classes holding information about all disturbance periods found in database
         disturbance_periods: list = []
@@ -377,9 +377,9 @@ class FlightInfoFinder:
 
                         # if callsign is not already logged for this disturbance, do it now
                         if callsign not in disturbances.keys():
-                            disturbances[callsign] = ***REMOVED***'timestamp': timestamp_int,
+                            disturbances[callsign] = {'timestamp': timestamp_int,
                                                       'altitude': geo_altitude,
-                                                      'icao24': icao24***REMOVED***
+                                                      'icao24': icao24}
 
             # Check if disturbance has ended and if we need to generate a complaint within set parameters
             if not disturbance_in_this_timestamp:
@@ -402,7 +402,7 @@ class FlightInfoFinder:
                         last_disturbance = None
                         disturbance_hits = 0
                         total_altitude = 0
-                        disturbances = ***REMOVED******REMOVED***
+                        disturbances = {}
                         callsigns_in_disturbance = []
 
             last_timestamp = timestamp
@@ -447,8 +447,8 @@ class FlightInfoFinder:
 
                     # Limit results to cap trajectory, if interval is set to 22 seconds,
                     # a limit of 15 will be +- 5 minutes, which should be more than enough
-                    items_after = states_collection.find(***REMOVED***'Time': ***REMOVED***'$gte': timestamp_int***REMOVED******REMOVED***).limit(15)
-                    items_before = states_collection.find(***REMOVED***'Time': ***REMOVED***'$lte': timestamp_int***REMOVED******REMOVED***).sort(
+                    items_after = states_collection.find({'Time': {'$gte': timestamp_int}}).limit(15)
+                    items_before = states_collection.find({'Time': {'$lte': timestamp_int}}).sort(
                         [('Time', pymongo.DESCENDING)]).limit(15)
 
                     # coordinates will be stored here
@@ -540,7 +540,7 @@ class FlightInfoFinder:
             if plot:
                 disturbance.img = str(base64.b64encode(disturbance_period.plot), 'UTF-8')
             else:
-                disturbance.img = ***REMOVED******REMOVED***
+                disturbance.img = {}
             all_found_disturbances.append(disturbance)
 
         # Finally return all found disturbances

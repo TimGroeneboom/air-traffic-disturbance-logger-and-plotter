@@ -66,15 +66,15 @@ class PlaneLogger:
                 self.environment.mongodb_config.collection]
             states = []
             for state in state_collection.states:
-                state_object = ***REMOVED***
+                state_object = {
                     "longitude": state.longitude,
                     "latitude": state.latitude,
                     "callsign": state.callsign,
                     "geo_altitude": state.geo_altitude,
                     "icao24": state.icao24
-              ***REMOVED***
+                }
                 states.append(state_object)
-            result = db_states.update_one(***REMOVED***'Time': key***REMOVED***, ***REMOVED***"$set": ***REMOVED***'States': states***REMOVED******REMOVED***, upsert=True)
+            result = db_states.update_one({'Time': key}, {"$set": {'States': states}}, upsert=True)
 
             # Plot if necessary
             if plot_options is not None and plot_options.plot:

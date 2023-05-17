@@ -35,8 +35,8 @@ class LatLonCache:
         :param address: the address key
         :return: True if address exists and is not expired
         """
-        if self.collection.count_documents(***REMOVED***'address': ***REMOVED***"$in": [address]***REMOVED******REMOVED***) > 0:
-            entry = self.collection.find_one(***REMOVED***'address': address***REMOVED***)
+        if self.collection.count_documents({'address': {"$in": [address]}}) > 0:
+            entry = self.collection.find_one({'address': address})
             if 'lat' in entry and 'lon' in entry and 'timestamp' in entry:
                 timestamp: datetime = convert_int_to_datetime(entry['timestamp'])
                 if datetime.datetime.now() - timestamp > datetime.timedelta(days=self.expire_days):
@@ -50,14 +50,14 @@ class LatLonCache:
         :param address: the address to update
         :param latlon: the lat, lon value
         """
-        self.collection.update_one(***REMOVED***'address': address***REMOVED***,
-                                   ***REMOVED***"$set": ***REMOVED***
+        self.collection.update_one({'address': address},
+                                   {"$set": {
                                        'address': address,
                                        'lat': latlon[0],
                                        'lon': latlon[1],
                                        'timestamp': convert_datetime_to_int(datetime.datetime.now())
-                                 ***REMOVED***
-                                 ***REMOVED*** upsert=True)
+                                   }
+                                   }, upsert=True)
 
     def get_latlon_from_address(self, address: str):
         """
@@ -65,6 +65,6 @@ class LatLonCache:
         :param address: the address
         :return: lat, lon tuple
         """
-        entry = self.collection.find_one(***REMOVED***'address': address***REMOVED***)
+        entry = self.collection.find_one({'address': address})
         return entry['lat'], entry['lon']
 
