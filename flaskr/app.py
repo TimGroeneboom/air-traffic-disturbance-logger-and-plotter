@@ -40,15 +40,15 @@ def create_app():
     if environment.DEPLOY_TEST_API:
         app.register_blueprint(test_api_page)
 
-    # Setup swagger
-    app.swagger = Swagger(app,
-                          template=swagger_template,
-                          config=swagger_config)
-
     if __name__ != '__main__':
         gunicorn_logger = logging.getLogger('gunicorn.error')
         app.logger.handlers = gunicorn_logger.handlers
         app.logger.setLevel(level=environment.LOGLEVEL)
+
+    # Setup swagger
+    app.swagger = Swagger(app,
+                          template=swagger_template,
+                          config=swagger_config)
 
     # Enable CORS
     cors = CORS(app)

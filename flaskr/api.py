@@ -1,4 +1,5 @@
 import multiprocessing
+import os.path
 from datetime import timedelta
 from multiprocessing import Process
 import requests
@@ -23,7 +24,11 @@ latlon_cache = LatLonCache(environment=environment,
                            expire_days=flaskr.environment.LATLON_CACHE_EXPIRATION_DAYS)
 
 
-@swag_from('swagger/find_disturbances.yml', methods=['GET'])
+def get_swag_path(filename: str):
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
+
+
+@swag_from(get_swag_path('swagger/find_disturbances.yml'), methods=['GET'])
 @api_page.route('/api/find_disturbances')
 @cross_origin()
 def find_disturbances_api():
@@ -35,7 +40,8 @@ def find_disturbances_api():
                    args=request.args)
 
 
-@swag_from('swagger/find_flights.yml', methods=['GET'])
+@swag_from(get_swag_path('swagger/find_flights.yml'),
+           methods=['GET'])
 @api_page.route('/api/find_flights')
 @cross_origin()
 def find_flights_api():
@@ -47,7 +53,8 @@ def find_flights_api():
                    args=request.args)
 
 
-@swag_from('swagger/get_trajectory.yml', methods=['GET'])
+@swag_from(get_swag_path('swagger/get_trajectory.yml'),
+           methods=['GET'])
 @api_page.route('/api/get_trajectory')
 @cross_origin()
 def get_trajectory_api():
@@ -393,3 +400,6 @@ def process_input(args, extra_args: list = []):
         raise Exception('Altitude cannot be smaller than %i meters' % 100)
 
     return args_mutable_dict
+
+
+
