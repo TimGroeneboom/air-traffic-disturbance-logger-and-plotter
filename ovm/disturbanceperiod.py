@@ -2,7 +2,11 @@ import datetime
 from dataclasses import dataclass, field
 
 @dataclass
-class Callsign:
+class CallsignInfo:
+    """
+    Holds all information about a found callsign.
+    """
+
     callsign: str = field(default_factory=str)
 
     datetime: int = field(default_factory=int)

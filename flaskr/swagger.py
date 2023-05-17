@@ -16,6 +16,12 @@ swagger_config = ***REMOVED***
     "headers": [],
     "specs": [
         ***REMOVED***
+            "endpoint": 'get_trajectory',
+            "route": '/swagger/get_trajectory.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+      ***REMOVED***
+        ***REMOVED***
             "endpoint": 'find_disturbances',
             "route": '/swagger/find_disturbances.json',
             "rule_filter": lambda rule: True,
