@@ -170,7 +170,8 @@ class FlightInfoFinder:
                         disturbance.callsigns.append(CallsignInfo(callsign=callsign,
                                                                   datetime=timestamp_int,
                                                                   altitude=geo_altitude,
-                                                                  icao24=icao24))
+                                                                  icao24=icao24,
+                                                                  coord=flight_coord))
 
                         # obtain trajectory if plot is needed
                         if plot:
@@ -379,7 +380,8 @@ class FlightInfoFinder:
                         if callsign not in disturbances.keys():
                             disturbances[callsign] = {'timestamp': timestamp_int,
                                                       'altitude': geo_altitude,
-                                                      'icao24': icao24}
+                                                      'icao24': icao24,
+                                                      'coord' : coord}
 
             # Check if disturbance has ended and if we need to generate a complaint within set parameters
             if not disturbance_in_this_timestamp:
@@ -511,13 +513,15 @@ class FlightInfoFinder:
                     callsigns.append(CallsignInfo(callsign=callsign,
                                                   datetime=timestamp_int,
                                                   altitude=trajectory.average_altitude,
-                                                  icao24=entry['icao24']))
+                                                  icao24=entry['icao24'],
+                                                  coord=entry['coord']))
             else:
                 for callsign, entry in disturbance_period.disturbances.items():
                     callsigns.append(CallsignInfo(callsign=callsign,
                                                   datetime=entry['timestamp'],
                                                   altitude=entry['altitude'],
-                                                  icao24=entry['icao24']))
+                                                  icao24=entry['icao24'],
+                                                  coord=entry['coord']))
 
             if plot:
                 # Set the bounding box for our area of interest

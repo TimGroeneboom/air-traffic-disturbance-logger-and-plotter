@@ -50,6 +50,8 @@ ENV TZ="Europe/Amsterdam"
 COPY . .
 
 # Init mongo database
+ARG DATABASE_MAX_MEM_SIZE="256M"
+ENV DATABASE_MAX_MEM_SIZE=$DATABASE_MAX_MEM_SIZE
 ARG DATABASE_NAME="planelogger"
 ENV DATABASE_NAME=$DATABASE_NAME
 ARG COLLECTION_NAME="states"
@@ -65,7 +67,7 @@ RUN mongod --fork --logpath /var/log/mongodb.log && \
 EXPOSE 80
 
 # Run web app
-CMD mongod --fork --logpath /var/log/mongodb.log && \
+CMD mongod -storageEngine wiredTiger -wiredTigerEngineConfigString="cache_size=$DATABASE_MAX_MEM_SIZE" --fork --logpath /var/log/mongodb.log && \
     service nginx start && \
     gunicorn -b 0.0.0.0:$PORT wsgi:application -w \
     "$(if [ $WORKERS = 0 ] ; then echo $(($(grep -c ^processor /proc/cpuinfo)*2+1)) ; else echo '$WORKERS'; fi)"

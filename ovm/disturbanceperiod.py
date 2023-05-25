@@ -15,6 +15,8 @@ class CallsignInfo:
 
     icao24: str = field(default_factory=str)
 
+    coord: tuple = field(default_factory=tuple)
+
 
 
 @dataclass

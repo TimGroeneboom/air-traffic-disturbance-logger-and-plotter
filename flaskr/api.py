@@ -96,8 +96,8 @@ def find_disturbances_process(shared_queue, args):
         begin_dt = convert_int_to_datetime(begin)
         end_dt = convert_int_to_datetime(end)
 
-        disturbance_finder: FlightInfoFinder = FlightInfoFinder(environment)
-        disturbances = disturbance_finder.find_disturbances(begin=begin_dt,
+        flight_finder: FlightInfoFinder = FlightInfoFinder(environment)
+        disturbances = flight_finder.find_disturbances(begin=begin_dt,
                                                             end=end_dt,
                                                             zoomlevel=zoomlevel,
                                                             plot=plot,
@@ -105,8 +105,7 @@ def find_disturbances_process(shared_queue, args):
                                                             radius=radius,
                                                             altitude=altitude,
                                                             occurrences=occurrences,
-                                                            timeframe=timeframe
-                                                            )
+                                                            timeframe=timeframe)
         shared_queue.put(disturbances)
         exit(0)
     except Exception as ex:
@@ -145,8 +144,8 @@ def find_flights_process(shared_queue, args):
         begin_dt = convert_int_to_datetime(begin)
         end_dt = convert_int_to_datetime(end)
 
-        disturbance_finder: FlightInfoFinder = FlightInfoFinder(environment)
-        flights = disturbance_finder.find_flights(origin=(lat, lon),
+        flight_finder: FlightInfoFinder = FlightInfoFinder(environment)
+        flights = flight_finder.find_flights(origin=(lat, lon),
                                                   begin=begin_dt,
                                                   end=end_dt,
                                                   radius=radius,
