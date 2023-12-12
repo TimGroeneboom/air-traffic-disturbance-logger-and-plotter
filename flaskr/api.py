@@ -272,24 +272,13 @@ def get_lat_lon_from_pro6pp(args):
         return latlon_cache.get_latlon_from_address(address_key)
     else:
         if len(postalcode) == 6 and args.get('streetnumber', type=str) is not None:
-            streetnumber = str(args['streetnumber'])
-
-            # Remove characters from streetnumber
-            numbers = [int(s) for s in streetnumber if s.isdigit()]
-            if len(numbers) <= 0:
-                raise Exception('No numbers found in streetnumber')
-
-            number: str = ''
-            for n in numbers:
-                number += str(n)
-
             url = '%s?' \
                   'authKey=%s&' \
                   'postalCode=%s&' \
                   'streetNumberAndPremise=%s' % \
                   (flaskr.environment.PRO6PP_API_AUTO_COMPLETE_URL,
                    flaskr.environment.PRO6PP_AUTH_KEY,
-                   postalcode, number)
+                   postalcode, str(args['streetnumber']))
 
             data = requests.get(url).json()
 
