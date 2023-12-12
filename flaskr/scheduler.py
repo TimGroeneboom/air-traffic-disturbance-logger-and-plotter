@@ -40,7 +40,7 @@ class Scheduler:
         self.database_handler.remove_entries_older_than(datetime.now() - timedelta(days=environment.STATES_RETENTION_DAYS))
 
     def _log_planes(self):
-        self.plane_logger.log(environment.PLANELOGGER_BBOX)
+        self.plane_logger.log(center=environment.PLANELOGGER_CENTER, radius=environment.PLANELOGGER_RADIUS)
 
 
 

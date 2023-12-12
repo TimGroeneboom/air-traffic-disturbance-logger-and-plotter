@@ -70,4 +70,5 @@ EXPOSE 80
 CMD mongod -storageEngine wiredTiger -wiredTigerEngineConfigString="cache_size=$DATABASE_MAX_MEM_SIZE" --fork --logpath /var/log/mongodb.log && \
     service nginx start && \
     gunicorn -b 0.0.0.0:$PORT wsgi:application -w \
-    "$(if [ $WORKERS = 0 ] ; then echo $(($(grep -c ^processor /proc/cpuinfo)*2+1)) ; else echo '$WORKERS'; fi)"
+    "$(if [ $WORKERS = 0 ] ; then echo $(($(grep -c ^processor /proc/cpuinfo)*2+1)) ; else echo '$WORKERS'; fi)" \
+    --preload

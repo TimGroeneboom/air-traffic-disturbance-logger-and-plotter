@@ -1,6 +1,6 @@
 # Air Traffic Disturbance Logger & Plotter
 
-This project aims to automatically log air traffic disturbance in your area. It uses the [opensky network](https://opensky-network.org/) to track air traffic around certain geographic bounds. 
+This project aims to automatically log air traffic disturbance in your area. It uses the [flightradar24](https://https://www.flightradar24.com/52.40,4.71/11/) to track air traffic around certain geographic bounds. 
 
 Air traffic data is stored using MongoDB. See the [planelogger script](ovm/planelogger.py). See the [planelogger section](#loggerpy) for CLI instructions. 
 Disturbance checking and plotting is done using the [disturbance finder script](ovm/disturbancefinder.py). See [Disturbance Check](#disturbancecheckpy) for CLI instructions.
@@ -17,27 +17,29 @@ See [MongoDB Installation](https://www.mongodb.com/docs/manual/installation/)
 ## logger.py
 Logs air traffic within certain geographic bounds and writes entries into a MongoDB database
 
-Uses the OpenSky rest API (https://openskynetwork.github.io/opensky-api/rest.html)
+Uses the flightradar24 rest API
 
-Make sure to setup your environment correctly using MongoDB and OpenSky credentials in the [environment.json](environment.json)
+Make sure to setup your environment correctly using MongoDB and flightradar credentials in the [environment.json](environment.json)
 
 Example usage:
 
 ```
-# Query from opensky and store all air traffic within given certain geographic bounds every 22 seconds forever
-python3 logger.py --bbox 49.44 54.16 2.82 7.02 --interval 22.0
+# Query from flightradar24 and store all air traffic within given radius of given center
+python3 logger.py --center 52.118077847871724 5.648460603506286 --radius 150000 --interval 22.0
 ```
 
 All CLI arguments:
 
 ```
-usage: logger.py [-h] [-b BBOX BBOX BBOX BBOX] [-l LOGLEVEL] [-p | --plot | --no-plot] [-o OUTPUTFILENAME]
+usage: logger.py [-h] [-c latitude longitude] [-r radius] [-l LOGLEVEL] [-p | --plot | --no-plot] [-o OUTPUTFILENAME]
                  [-z ZOOMLEVEL] [-i INTERVAL] [-r RUNS]
 
 options:
   -h, --help            show this help message and exit
-  -b BBOX BBOX BBOX BBOX, --bbox BBOX BBOX BBOX BBOX
-                        Bounding Box [lat_min, lat_max, lon_min, lon_max]
+  -c latitude longitude, --center latitude longitude
+                        Center [lat, lon]
+  -r radius, --radius meters
+                        Radius in meters
   -l LOGLEVEL, --loglevel LOGLEVEL
                         LOG Level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
   -p, --plot, --no-plot
@@ -76,7 +78,7 @@ options:
 ## environment.json
 
 The [environment.json](environment.json) in the repository root directory contains configuration needed for both logger and disturbancecheck to run. It contains the following:
-* OpenSKY credentials
+* flightradar24 credentials
 * MongoDB configuration
 
 # Setup Flask App

@@ -11,11 +11,16 @@ from ovm.planelogger import PlaneLogger, PlotOptions
 if __name__ == '__main__':
     # parse cli arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--bbox',
+    parser.add_argument('-c', '--center',
                         type=float,
-                        nargs=4,
-                        default=[49.44, 54.16, 2.82, 7.02],
-                        help='Bounding Box [lat_min, lat_max, lon_min, lon_max]')
+                        nargs=2,
+                        default=[52.118077847871724, 5.648460603506286],
+                        help='Latitude Longitude center [lat, lon]')
+    parser.add_argument('-r', '--radius',
+                        type=int,
+                        nargs=1,
+                        default=150000,
+                        help='Radius in meters')
     parser.add_argument('-l', '--loglevel',
                         type=str.upper,
                         default='INFO',
@@ -34,7 +39,7 @@ if __name__ == '__main__':
                         type=float,
                         default=22.5,
                         help='Time between runs')
-    parser.add_argument('-r', '--runs',
+    parser.add_argument('-t', '--times',
                         type=int,
                         default=0,
                         help='Amount of runs between intervals, default = 0 meaning infinite')
@@ -60,7 +65,8 @@ if __name__ == '__main__':
             current_time = time.perf_counter()
 
             # Run plane logger
-            plane_logger.log(bbox=(args.bbox[0], args.bbox[1], args.bbox[2], args.bbox[3]),
+            plane_logger.log(center=(args.center[0], args.center[1]),
+                             radius=args.radius,
                              plot_options=PlotOptions(args.plot,
                                                       args.zoomlevel,
                                                       ('%s%i.jpg' % (args.outputfilename, runs))))
@@ -76,7 +82,7 @@ if __name__ == '__main__':
             logging.exception(ex.__str__())
 
         runs += 1
-        if args.runs > 0 and runs >= args.runs:
+        if args.times > 0 and runs >= args.times:
             run = False
             logging.info('%i runs finished, exiting.' % args.runs)
         else:

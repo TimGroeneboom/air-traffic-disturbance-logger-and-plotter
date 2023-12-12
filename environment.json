@@ -1,7 +1,7 @@
 {
-  "opensky_credentials" : {
-    "username" : "<OPENSKY_USER>",
-    "password" : "<OPENSKY_PASS>"
+  "flightradar24_creds" : {
+    "username" : "",
+    "password" : ""
   },
   "mongodb_config" : {
       "host": "127.0.0.1",
