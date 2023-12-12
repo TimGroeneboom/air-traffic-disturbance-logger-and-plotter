@@ -1,6 +1,7 @@
 import logging
 from flask import Flask
 from flask_cors import CORS
+from flaskr.scheduler import Scheduler
 from flaskr.swagger import swagger_template, swagger_config
 from flaskr.testapi import test_api_page
 from flaskr.api import api_page
@@ -11,12 +12,17 @@ from flaskr import environment
 # Set log level
 logging.basicConfig(level=environment.LOGLEVEL)
 
-def create_app():
+
+def create_app(enableScheduler: bool = True):
     # Create app
     app = Flask(__name__)
 
     # Set log level
     app.logger.setLevel(level=environment.LOGLEVEL)
+
+    if enableScheduler:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        app.scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
     # Setup json encoder
     app.json_encoder = LazyJSONEncoder
