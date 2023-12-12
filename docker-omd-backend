@@ -3,7 +3,6 @@
 # Install python3, ubuntu and mongo
 FROM python:3.10-slim-buster
 FROM ubuntu:22.04
-FROM mongo:latest
 
 # Update aptitude with new repo
 RUN apt-get update
@@ -49,26 +48,11 @@ ENV TZ="Europe/Amsterdam"
 # Copy contents
 COPY . .
 
-# Init mongo database
-ARG DATABASE_MAX_MEM_SIZE="256M"
-ENV DATABASE_MAX_MEM_SIZE=$DATABASE_MAX_MEM_SIZE
-ARG DATABASE_NAME="planelogger"
-ENV DATABASE_NAME=$DATABASE_NAME
-ARG COLLECTION_NAME="states"
-ENV COLLECTION_NAME=$COLLECTION_NAME
-ARG LAT_LON_CACHE_NAME="latloncache"
-ENV LAT_LON_CACHE_NAME=$LAT_LON_CACHE_NAME
-
-RUN mongod --fork --logpath /var/log/mongodb.log && \
-    mongosh $DATABASE_NAME --eval "db.createCollection('$COLLECTION_NAME')" && \
-    mongosh $DATABASE_NAME --eval "db.createCollection('$LAT_LON_CACHE_NAME')"
-
 # Expose ports
 EXPOSE 80
 
 # Run web app
-CMD mongod -storageEngine wiredTiger -wiredTigerEngineConfigString="cache_size=$DATABASE_MAX_MEM_SIZE" --fork --logpath /var/log/mongodb.log && \
-    service nginx start && \
+CMD service nginx start && \
     gunicorn -b 0.0.0.0:$PORT wsgi:application -w \
     "$(if [ $WORKERS = 0 ] ; then echo $(($(grep -c ^processor /proc/cpuinfo)*2+1)) ; else echo '$WORKERS'; fi)" \
     --preload

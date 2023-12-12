@@ -48,7 +48,8 @@ class PlaneLogger:
         """
         Queries states from open sky given the specified geographic bounding box and logs states into MongoDB.
         Creates state plot if required
-        @param bbox: geographic bounding box (lat_min, lat_max, lon_min, lon_max)
+        @param center in lat lon
+        @param radius in meters
         @param plot_options: plot options
         """
 
@@ -76,7 +77,7 @@ class PlaneLogger:
                     "longitude": flight.longitude,
                     "latitude": flight.latitude,
                     "callsign": flight.callsign,
-                    "geo_altitude": flight.altitude,
+                    "geo_altitude": flight.altitude * 0.3048, # feet to meters
                     "icao24": flight.airline_icao
                 }
                 states.append(state_object)
