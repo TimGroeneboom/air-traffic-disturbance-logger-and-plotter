@@ -1,4 +1,7 @@
 {
+  "timezone" : {
+    "timezone" : "Europe/Amsterdam"
+  },
   "flightradar24_creds" : {
     "username" : "",
     "password" : ""

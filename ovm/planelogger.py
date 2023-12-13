@@ -3,6 +3,8 @@ import logging
 from datetime import datetime
 import geopy
 import geopy.distance
+import pytz
+
 from ovm.environment import Environment
 from ovm.plotter import plot_states
 from pymongo import MongoClient
@@ -28,6 +30,9 @@ class PlaneLogger:
     def __init__(self, environment: Environment):
         # Set environment
         self.environment = environment
+
+        # Set timezone
+        self.timezone = pytz.timezone(self.environment.timezone.timezone)
 
         # Create MongoDB client
         self.mongo_client = MongoClient(environment.mongodb_config.host,
@@ -64,7 +69,7 @@ class PlaneLogger:
                 return
 
             # Create states list with interesting data and store list in mongo db with timestamp as key value
-            timestamp = datetime.datetime.now()
+            timestamp = datetime.datetime.now(self.timezone)
             logging.info(self.prepare_log('Timestamp of obtained flights : %s' % timestamp.__str__()))
             key = convert_datetime_to_int(timestamp)
 
