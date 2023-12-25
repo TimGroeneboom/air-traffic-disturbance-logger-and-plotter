@@ -49,13 +49,14 @@ class PlaneLogger:
     def prepare_log(self, message: str):
         return self.__class__.__name__ + ': ' + message
 
-    def log(self, center: tuple, radius: int, plot_options: PlotOptions = None):
+    def log(self, center: tuple, radius: int, plot_options: PlotOptions = None, ignore_grounded: bool = True):
         """
         Queries states from open sky given the specified geographic bounding box and logs states into MongoDB.
         Creates state plot if required
         @param center in lat lon
         @param radius in meters
         @param plot_options: plot options
+        @:param ignore_grounded: ignore grounded planes
         """
 
         try:
@@ -73,19 +74,24 @@ class PlaneLogger:
             logging.info(self.prepare_log('Timestamp of obtained flights : %s' % timestamp.__str__()))
             key = convert_datetime_to_int(timestamp)
 
-            logging.info(self.prepare_log('Storing %i flights in database' % len(flights)))
             db_states = self.mongo_client[self.environment.mongodb_config.database][
                 self.environment.mongodb_config.collection]
             states = []
             for flight in flights:
-                state_object = {
-                    "longitude": flight.longitude,
-                    "latitude": flight.latitude,
-                    "callsign": flight.callsign,
-                    "geo_altitude": flight.altitude * 0.3048, # feet to meters
-                    "icao24": flight.airline_icao
-                }
-                states.append(state_object)
+                ignore_flight : bool = False
+                if ignore_grounded and flight.altitude <= 0:
+                    ignore_flight = True
+
+                if not ignore_flight:
+                    state_object = {
+                        "longitude": flight.longitude,
+                        "latitude": flight.latitude,
+                        "callsign": flight.callsign,
+                        "geo_altitude": flight.altitude * 0.3048, # feet to meters
+                        "icao24": flight.airline_icao
+                    }
+                    states.append(state_object)
+            logging.info(self.prepare_log('Storing %i flights in database' % len(states)))
             result = db_states.update_one({'Time': key}, {"$set": {'States': states}}, upsert=True)
 
             # Plot if necessary
