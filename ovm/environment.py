@@ -1,9 +1,18 @@
 import json
 
-
-class OpenSkyCredentials(object):
+class Timezone(object):
     """
-    DataClass holding opensky credentials
+    DataClass holding timezone
+    """
+    def __init__(self, timezone):
+        self.timezone = timezone
+
+        def __str__(self):
+            return "{0}".format(self.timezone)
+
+class FlightRadar24Credentials(object):
+    """
+    DataClass holding FlightRadar24 credentials
     """
     def __init__(self, username, password):
         self.username = username
@@ -31,12 +40,13 @@ class Environment(object):
     """
     DataClass containing MongoDBConfiguration and OpenSkyCredentials
     """
-    def __init__(self, opensky_credentials, mongodb_config):
-        self.opensky_credentials = OpenSkyCredentials(**opensky_credentials)
+    def __init__(self, flightradar24_creds, mongodb_config, timezone):
+        self.flightradar24_creds = FlightRadar24Credentials(**flightradar24_creds)
         self.mongodb_config = MongoDBConfiguration(**mongodb_config)
+        self.timezone = Timezone(**timezone)
 
     def __str__(self):
-        return "{0} ,{1}".format(self.opensky_credentials, self.mongodb_config)
+        return "{0} ,{1} ,{2}".format(self.flightradar24_creds, self.mongodb_config, self.timezone)
 
 
 def load_environment(filename: str):

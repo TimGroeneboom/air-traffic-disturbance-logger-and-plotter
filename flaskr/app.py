@@ -1,36 +1,28 @@
 import logging
 from flask import Flask
 from flask_cors import CORS
-
 from flaskr.scheduler import Scheduler
 from flaskr.swagger import swagger_template, swagger_config
 from flaskr.testapi import test_api_page
 from flaskr.api import api_page
 from flasgger import Swagger, LazyJSONEncoder
-from flaskr import environment
 import sys, socket
+from flaskr import environment
 
 # Set log level
 logging.basicConfig(level=environment.LOGLEVEL)
 
 
-def create_app():
+def create_app(enableScheduler: bool = True):
     # Create app
     app = Flask(__name__)
 
-    # Setup scheduler, bind a socket to a port to setup one scheduler for each worker thread
-    # spawned by gunicorn
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(("127.0.0.1", 47200))
-    except socket.error:
-        logging.debug("Scheduler already started, do nothing")
-    else:
-        from apscheduler.schedulers.background import BackgroundScheduler
-        app.scheduler = Scheduler(loglevel=environment.LOGLEVEL)
-
     # Set log level
     app.logger.setLevel(level=environment.LOGLEVEL)
+
+    if enableScheduler:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        app.scheduler = Scheduler(loglevel=environment.LOGLEVEL)
 
     # Setup json encoder
     app.json_encoder = LazyJSONEncoder
