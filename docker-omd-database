@@ -1,0 +1,38 @@
+# syntax=docker/dockerfile:1
+
+# Install python3, ubuntu and mongo
+FROM ubuntu:22.04
+FROM mongo:latest
+
+# Update aptitude with new repo
+RUN apt-get update
+
+# Install git 
+RUN apt-get install -y git
+
+# Set port as environment variable
+ENV PORT=27017
+
+# Set timezone
+ENV TZ="Europe/Amsterdam"
+
+# Init mongo database
+ARG DATABASE_MAX_MEM_SIZE="256M"
+ENV DATABASE_MAX_MEM_SIZE=$DATABASE_MAX_MEM_SIZE
+ARG DATABASE_NAME="planelogger"
+ENV DATABASE_NAME=$DATABASE_NAME
+ARG COLLECTION_NAME="states"
+ENV COLLECTION_NAME=$COLLECTION_NAME
+ARG LAT_LON_CACHE_NAME="latloncache"
+ENV LAT_LON_CACHE_NAME=$LAT_LON_CACHE_NAME
+
+RUN mongod --fork --logpath /var/log/mongodb.log && \
+    mongosh $DATABASE_NAME --eval "db.createCollection('$COLLECTION_NAME')" && \
+    mongosh $DATABASE_NAME --eval "db.createCollection('$LAT_LON_CACHE_NAME')"
+
+# Expose ports
+EXPOSE $PORT
+
+# Run Mongodb
+CMD mongod --bind_ip_all -storageEngine wiredTiger -wiredTigerEngineConfigString="cache_size=$DATABASE_MAX_MEM_SIZE" --fork --logpath /var/log/mongodb.log && \
+    tail -f /dev/null
